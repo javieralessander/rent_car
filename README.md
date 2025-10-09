@@ -1,10 +1,10 @@
-# Sistema Compras
+# Sistema de Rent Cars
 
-Bienvenido al proyecto **Sistema Compras**, una aplicación desarrollada en Flutter para gestionar compras de manera eficiente.
+Bienvenido al proyecto **Sistema de Rent Cars**, una aplicación desarrollada en Flutter para gestionar alquiler de vehículos.
 
 ## Descripción
 
-Este proyecto sirve como punto de partida para una aplicación Flutter enfocada en la gestión de compras. Incluye una estructura básica y recursos útiles para comenzar el desarrollo.
+Este proyecto sirve como punto de partida para una aplicación Flutter enfocada en la gestión de alquiler de vehiculos. Incluye una estructura básica y recursos útiles para comenzar el desarrollo.
 
 ## Requisitos Previos
 

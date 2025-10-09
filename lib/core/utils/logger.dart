@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 /// Servicio centralizado para logging y manejo de errores
 class Logger {
-  static const String _tag = 'SistemaCompras';
+  static const String _tag = 'RentCarApp';
 
   /// Log de información (solo en debug)
   static void info(String message, [String? tag]) {

@@ -921,78 +921,82 @@ class _CollectionGridCard extends StatelessWidget {
                       }
                     }
 
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (item.badge != null) ...[
-                              _CollectionBadge(data: item.badge!, size: badgeSize),
-                              SizedBox(width: horizontalGap),
-                            ],
-                            Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.title,
-                                    style: TextStyle(
-                                      fontSize: titleSize,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.dark,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (item.subtitle != null &&
-                                      item.subtitle!.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        item.subtitle!,
-                                        style: TextStyle(
-                                          color: AppColors.grayDark,
-                                          fontSize: subtitleSize,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
+                    return Flexible(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (item.badge != null) ...[
+                                _CollectionBadge(data: item.badge!, size: badgeSize),
+                                SizedBox(width: horizontalGap),
+                              ],
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.title,
+                                      style: TextStyle(
+                                        fontSize: titleSize,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.dark,
                                       ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                ],
+                                    if (item.subtitle != null &&
+                                        item.subtitle!.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Text(
+                                          item.subtitle!,
+                                          style: TextStyle(
+                                            color: AppColors.grayDark,
+                                            fontSize: subtitleSize,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
                         if (!showCompactDetails && richDetails.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          ...List.generate(4, (i) {
-                            if (i < richDetails.length) {
-                              return _DetailRow(
-                                detail: richDetails[i],
+                          const SizedBox(height: 12),
+                          Flexible(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: richDetails.take(3).map((detail) => _DetailRow(
+                                detail: detail,
                                 valueFontSize: detailFontSize,
                                 labelFontSize: detailFontSize - 2,
-                              );
-                            } else {
-                              // Render an empty row as placeholder
-                              return const SizedBox(height: 34);
-                            }
-                          }),
+                              )).toList(),
+                            ),
+                          ),
                         ],
                         if (showCompactDetails && chipDetails.isNotEmpty) ...[
-                          SizedBox(height: isCompactWidth ? 12 : 14),
-                          _DetailChipWrap(
-                            details: chipDetails,
-                            fontSize: compactDetailFont,
+                          SizedBox(height: isCompactWidth ? 8 : 10),
+                          Flexible(
+                            child: _DetailChipWrap(
+                              details: chipDetails,
+                              fontSize: compactDetailFont,
+                            ),
                           ),
                         ],
                         if (!showCompactDetails && inlineDetails.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          _InlineDetails(details: inlineDetails),
+                          const SizedBox(height: 8),
+                          Flexible(
+                            child: _InlineDetails(details: inlineDetails),
+                          ),
                         ],
-                      ],
+                        ],
+                      ),
                     );
                   },
                 ),

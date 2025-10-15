@@ -40,11 +40,22 @@ class DashboardService {
       final rentals = results[2] as List<Rental>;
       final inspections = results[3] as List<Inspection>;
 
+      // Calcular métricas mejoradas
+      final activeRentals = rentals.where((r) => !r.esDevuelto).length;
+      final monthlyRevenue = _calculateMonthlyRevenue(rentals);
+      final averageRentalDuration = _calculateAverageRentalDuration(rentals);
+      final overdueRentals = rentals.where((r) => r.estaVencida).length;
+      final vehicleUtilization = _calculateVehicleUtilization(vehicles, rentals);
+
       return DashboardSummary(
         totalVehicles: vehicles.length,
         totalClients: clients.length,
-        totalActiveRentals: rentals.where((r) => !r.esDevuelto).length,
+        totalActiveRentals: activeRentals,
         totalInspections: inspections.length,
+        monthlyRevenue: monthlyRevenue,
+        averageRentalDuration: averageRentalDuration,
+        overdueRentals: overdueRentals,
+        vehicleUtilizationRate: vehicleUtilization,
         vehiclesByType: _groupVehiclesByType(vehicles),
         rentalsByMonth: _groupRentalsByMonth(rentals),
         clientsByType: _groupClientsByType(clients),
@@ -116,6 +127,32 @@ class DashboardService {
       grouped[typeKey] = (grouped[typeKey] ?? 0) + 1;
     }
     return grouped;
+  }
+
+  /// Calcula los ingresos del mes actual
+  double _calculateMonthlyRevenue(List<Rental> rentals) {
+    final now = DateTime.now();
+    final currentMonth = rentals.where((rental) =>
+        rental.fechaRenta.year == now.year &&
+        rental.fechaRenta.month == now.month).toList();
+
+    return currentMonth.fold<double>(0, (sum, rental) => sum + rental.montoTotal);
+  }
+
+  /// Calcula la duración promedio de rentas
+  double _calculateAverageRentalDuration(List<Rental> rentals) {
+    if (rentals.isEmpty) return 0.0;
+
+    final totalDays = rentals.fold<int>(0, (sum, rental) => sum + rental.cantidadDias);
+    return totalDays / rentals.length;
+  }
+
+  /// Calcula la tasa de utilización de vehículos
+  double _calculateVehicleUtilization(List<Vehicle> vehicles, List<Rental> rentals) {
+    if (vehicles.isEmpty) return 0.0;
+
+    final activeRentals = rentals.where((r) => !r.esDevuelto).length;
+    return (activeRentals / vehicles.length) * 100;
   }
 
   /// Obtiene datos para gráficos específicos

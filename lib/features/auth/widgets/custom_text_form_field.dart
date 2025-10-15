@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class CustomTextFormField extends StatelessWidget {
+class CustomTextFormField extends StatefulWidget {
   final TextInputType? keyboardType;
   final String? labelText;
   final String? hintText;
@@ -16,6 +16,7 @@ class CustomTextFormField extends StatelessWidget {
   final TextEditingController? controller;
   final TextCapitalization textCapitalization;
   final TextInputAction? textInputAction;
+  final bool validateOnChange;
 
   const CustomTextFormField({
     super.key,
@@ -33,28 +34,50 @@ class CustomTextFormField extends StatelessWidget {
     this.onTap,
     this.textCapitalization = TextCapitalization.none,
     this.textInputAction,
+    this.validateOnChange = true,
   });
+
+  @override
+  State<CustomTextFormField> createState() => _CustomTextFormFieldState();
+}
+
+class _CustomTextFormFieldState extends State<CustomTextFormField> {
+  String? _currentError;
+
+  void _validateField(String value) {
+    if (widget.validator != null && widget.validateOnChange) {
+      final error = widget.validator!(value);
+      setState(() {
+        _currentError = error;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      keyboardType: keyboardType,
-      obscureText: obscureText,
-      textCapitalization: textCapitalization,
+      keyboardType: widget.keyboardType,
+      obscureText: widget.obscureText,
+      textCapitalization: widget.textCapitalization,
       decoration: InputDecoration(
         isDense: true,
-        labelText: labelText,
-        hintText: hintText,
-        suffixIcon: suffixIcon,
+        labelText: widget.labelText,
+        hintText: widget.hintText,
+        suffixIcon: widget.suffixIcon,
+        errorText: widget.validateOnChange ? _currentError : null,
       ),
-      validator: validator,
-      onChanged: onChanged != null ? (value) => onChanged!(value.trim()) : null,
-      inputFormatters: inputFormatters,
-      controller: controller,
-      initialValue: controller == null ? initialValue : null,
-      textInputAction: textInputAction,
-      onTap: onTap,
-      enabled: enabled,
+      validator: widget.validator,
+      onChanged: (value) {
+        final trimmed = value.trim();
+        widget.onChanged?.call(trimmed);
+        _validateField(trimmed);
+      },
+      inputFormatters: widget.inputFormatters,
+      controller: widget.controller,
+      initialValue: widget.controller == null ? widget.initialValue : null,
+      textInputAction: widget.textInputAction,
+      onTap: widget.onTap,
+      enabled: widget.enabled,
     );
   }
 }

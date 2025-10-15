@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
 import '../../../../shared/widgets/generic_form_dialog.dart';
 import '../../../../shared/utils/input_validators.dart';
 import '../../vehicles/providers/vehicle_provider.dart';
+import '../../vehicles/models/vehicle_model.dart';
 import '../../clients/providers/client_provider.dart';
 import '../../employee/providers/employee_provider.dart';
 import '../models/rental_model.dart';
 import '../models/rental_form.dart';
 import '../providers/rental_provider.dart';
+import '../services/rental_report_service.dart';
 
 class RentalScreen extends StatefulWidget {
   static const String name = 'rentals';
@@ -68,12 +71,25 @@ class _RentalScreenState extends State<RentalScreen> {
         onPageChanged: provider.cambiarPagina,
         onItemsPerPageChanged: provider.cambiarRegistrosPorPagina,
         onSearch: (value) => provider.busqueda = value,
-        topRightWidget: FloatingActionButton.extended(
-          onPressed: () => _openRentalDialog(context),
-          icon: const Icon(Icons.add),
-          label: const Text('Nueva renta'),
-          backgroundColor: AppColors.success,
-          foregroundColor: AppColors.white,
+        topRightWidget: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FloatingActionButton.extended(
+              onPressed: () => _showReportDialog(context),
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text('Exportar PDF'),
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+            ),
+            const SizedBox(width: 12),
+            FloatingActionButton.extended(
+              onPressed: () => _openRentalDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Nueva renta'),
+              backgroundColor: AppColors.success,
+              foregroundColor: AppColors.white,
+            ),
+          ],
         ),
         emptyBuilder: provider.error != null
             ? Column(
@@ -83,7 +99,53 @@ class _RentalScreenState extends State<RentalScreen> {
                   Text(
                     provider.error!,
                     style: const TextStyle(color: AppColors.danger),
+                    textAlign: TextAlign.center,
                   ),
+                  if (provider.error!.contains('No se puede conectar al servidor'))
+                    ...[
+                      const SizedBox(height: 16),
+                      Card(
+                        color: AppColors.warning.withOpacity(0.1),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: AppColors.warning),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Soluciones posibles:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.warning,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                '1. Verifique que el servidor backend Spring Boot esté ejecutándose\n'
+                                '2. Confirme que esté corriendo en el puerto 8080\n'
+                                '3. Revise la configuración de CORS en el backend\n'
+                                '4. Verifique la URL en .env.development',
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(height: 12),
+                              ElevatedButton.icon(
+                                onPressed: () => provider.cargarRentas(),
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Reintentar conexión'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.warning,
+                                  foregroundColor: AppColors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                 ],
               )
             : null,
@@ -99,12 +161,32 @@ class _RentalScreenState extends State<RentalScreen> {
     final clientProvider = context.read<ClientProvider>();
     final employeeProvider = context.read<EmployeeProvider>();
 
+    final rentalProvider = context.read<RentalProvider>();
+    final availableVehicles = _getAvailableVehicles(vehicleProvider, rentalProvider, initial);
+
+    // Verificar que existan datos básicos
     if (vehicleProvider.todosVehiculos.isEmpty ||
         clientProvider.todosClientes.isEmpty ||
         employeeProvider.todosEmpleados.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            vehicleProvider.todosVehiculos.isEmpty
+              ? 'No hay vehículos registrados. Primero debe registrar vehículos.'
+              : clientProvider.todosClientes.isEmpty
+                ? 'No hay clientes registrados. Primero debe registrar clientes.'
+                : 'No hay empleados registrados. Primero debe registrar empleados.'
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Verificar vehículos disponibles solo si hay vehículos pero ninguno disponible
+    if (availableVehicles.isEmpty && vehicleProvider.todosVehiculos.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Verifique que existan vehículos, clientes y empleados antes de continuar.'),
+          content: Text('No hay vehículos disponibles para rentar. Todos están actualmente rentados.'),
         ),
       );
       return;
@@ -159,7 +241,7 @@ class _RentalScreenState extends State<RentalScreen> {
         fromValues: (values, previous) => RentalForm(
           noRenta: previous?.noRenta ?? (initial != null ? RentalForm.fromRental(initial).noRenta : null),
           empleadoId: values['empleadoId'] ?? previous?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : employeeProvider.todosEmpleados.first.id!),
-          vehiculoId: values['vehiculoId'] ?? previous?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : vehicleProvider.todosVehiculos.first.id!),
+          vehiculoId: values['vehiculoId'] ?? previous?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : _getAvailableVehicles(vehicleProvider, context.read<RentalProvider>(), initial).first.id!),
           clienteId: values['clienteId'] ?? previous?.clienteId ?? (initial != null ? RentalForm.fromRental(initial).clienteId : clientProvider.todosClientes.first.id!),
           fechaRenta: values['fechaRenta'] ?? previous?.fechaRenta ?? (initial != null ? RentalForm.fromRental(initial).fechaRenta : DateTime.now()),
           fechaDevolucion: values['fechaDevolucion'] ?? previous?.fechaDevolucion ?? (initial != null ? RentalForm.fromRental(initial).fechaDevolucion : null),
@@ -211,7 +293,7 @@ class _RentalScreenState extends State<RentalScreen> {
             key: 'vehiculoId',
             label: 'Vehículo',
             fieldType: 'dropdown',
-            options: vehicleProvider.todosVehiculos
+            options: _getAvailableVehicles(vehicleProvider, context.read<RentalProvider>(), initial)
                 .map((vehicle) => {'value': vehicle.id, 'label': '${vehicle.noPlaca} - ${vehicle.descripcion}'})
                 .toList(),
             validator: (value) {
@@ -356,6 +438,10 @@ class _RentalScreenState extends State<RentalScreen> {
               fieldName: 'Monto por día',
               minValue: 0.01,
             ),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^[0-9]*\.?[0-9]{0,2}')),
+              // Solo permite números positivos y hasta dos decimales
+            ],
             getValue: (v) => v?.montoDia,
             applyValue: (v, value) => RentalForm(
               noRenta: v?.noRenta ?? initial?.noRenta,
@@ -421,10 +507,14 @@ class _RentalScreenState extends State<RentalScreen> {
             label: 'Estado',
             fieldType: 'dropdown',
             options: const [
-              {'value': true, 'label': 'Activo'},
-              {'value': false, 'label': 'Inactivo'},
+              {'value': EstadoRenta.RESERVADA, 'label': 'Reservada'},
+              {'value': EstadoRenta.ACTIVA, 'label': 'En renta'},
+              {'value': EstadoRenta.DEVUELTA, 'label': 'Devuelta'},
+              {'value': EstadoRenta.VENCIDA, 'label': 'Vencida'},
+              {'value': EstadoRenta.CANCELADA, 'label': 'Cancelada'},
+              {'value': EstadoRenta.PERDIDA, 'label': 'Perdida'},
             ],
-            getValue: (v) => v?.estado == EstadoRenta.ACTIVA ? true : null,
+            getValue: (v) => v?.estado,
             applyValue: (v, value) => RentalForm(
               noRenta: v?.noRenta ?? initial?.noRenta,
               empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
@@ -435,7 +525,7 @@ class _RentalScreenState extends State<RentalScreen> {
               montoDia: v?.montoDia ?? (initial != null ? RentalForm.fromRental(initial).montoDia : 0.0),
               cantidadDias: v?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
               comentario: v?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
-              estado: (value as bool) ? EstadoRenta.ACTIVA : EstadoRenta.DEVUELTA,
+              estado: value as EstadoRenta,
             ),
           ),
         ],
@@ -464,9 +554,9 @@ class _RentalScreenState extends State<RentalScreen> {
       title: 'Renta #${renta.noRenta}',
       subtitle: 'Cliente: $clientName • Vehículo: $vehicleName',
       statusChip: CollectionStatusChip(
-        label: isDevuelto ? 'Devuelto' : 'En curso',
-        backgroundColor: isDevuelto ? AppColors.info.withOpacity(0.16) : AppColors.warning.withOpacity(0.16),
-        textColor: isDevuelto ? AppColors.info : AppColors.warning,
+        label: renta.estadoDescripcion,
+        backgroundColor: _getColorFromString(renta.estadoColor).withOpacity(0.16),
+        textColor: _getColorFromString(renta.estadoColor),
       ),
       details: [
         CollectionDetailInfo(
@@ -480,7 +570,7 @@ class _RentalScreenState extends State<RentalScreen> {
         CollectionDetailInfo(
           label: 'Cliente',
           value: clientName,
-          inlineValue: 'Cliente: $clientName',
+          inlineValue: clientName.length > 20 ? '${clientName.substring(0, 20)}...' : clientName,
           icon: Icons.person_outlined,
           iconColor: AppColors.primary,
           iconBackground: AppColors.primary.withOpacity(0.15),
@@ -488,56 +578,23 @@ class _RentalScreenState extends State<RentalScreen> {
         CollectionDetailInfo(
           label: 'Vehículo',
           value: vehicleName,
-          inlineValue: 'Vehículo: $vehicleName',
+          inlineValue: vehicleName.length > 20 ? '${vehicleName.substring(0, 20)}...' : vehicleName,
           icon: Icons.directions_car_outlined,
           iconColor: AppColors.secondary,
           iconBackground: AppColors.secondary.withOpacity(0.16),
         ),
         CollectionDetailInfo(
-          label: 'Empleado',
-          value: employeeName,
-          inlineValue: 'Empleado: $employeeName',
-          icon: Icons.badge_outlined,
-          iconColor: AppColors.info,
-          iconBackground: AppColors.info.withOpacity(0.14),
-        ),
-        CollectionDetailInfo(
-          label: 'Fecha Renta',
+          label: 'Fecha',
           value: '${renta.fechaRenta.day}/${renta.fechaRenta.month}/${renta.fechaRenta.year}',
-          inlineValue: 'Inicio: ${renta.fechaRenta.day}/${renta.fechaRenta.month}/${renta.fechaRenta.year}',
+          inlineValue: '${renta.fechaRenta.day}/${renta.fechaRenta.month}/${renta.fechaRenta.year}',
           icon: Icons.calendar_today_outlined,
           iconColor: AppColors.success,
           iconBackground: AppColors.success.withOpacity(0.16),
         ),
-        if (renta.fechaDevolucion != null)
-          CollectionDetailInfo(
-            label: 'Fecha devolución',
-            value: '${renta.fechaDevolucion!.day}/${renta.fechaDevolucion!.month}/${renta.fechaDevolucion!.year}',
-            inlineValue: 'Fin: ${renta.fechaDevolucion!.day}/${renta.fechaDevolucion!.month}/${renta.fechaDevolucion!.year}',
-            icon: Icons.event_available_outlined,
-            iconColor: AppColors.success,
-            iconBackground: AppColors.success.withOpacity(0.16),
-          ),
-        CollectionDetailInfo(
-          label: 'Monto por día',
-          value: InputFormatters.formatCurrency(renta.montoDia),
-          inlineValue: '${InputFormatters.formatCurrency(renta.montoDia)}/día',
-          icon: Icons.attach_money_outlined,
-          iconColor: AppColors.warning,
-          iconBackground: AppColors.warning.withOpacity(0.18),
-        ),
-        CollectionDetailInfo(
-          label: 'Días',
-          value: '${renta.cantidadDias} días',
-          inlineValue: '${renta.cantidadDias} días',
-          icon: Icons.schedule_outlined,
-          iconColor: AppColors.info,
-          iconBackground: AppColors.info.withOpacity(0.14),
-        ),
         CollectionDetailInfo(
           label: 'Total',
           value: InputFormatters.formatCurrency(montoTotal),
-          inlineValue: 'Total: ${InputFormatters.formatCurrency(montoTotal)}',
+          inlineValue: InputFormatters.formatCurrency(montoTotal),
           icon: Icons.account_balance_wallet_outlined,
           iconColor: AppColors.primary,
           iconBackground: AppColors.primary.withOpacity(0.14),
@@ -550,42 +607,673 @@ class _RentalScreenState extends State<RentalScreen> {
           variant: CollectionActionVariant.primary,
           onPressed: () => _openRentalDialog(context, initial: renta),
         ),
-        if (!isDevuelto)
+        // Botón "Devolver" para rentas sin fecha de devolución (fecha programada pasada/actual)
+        if (!isDevuelto && renta.fechaDevolucion == null)
           CollectionActionData(
             label: 'Devolver',
             icon: Icons.assignment_return_outlined,
             variant: CollectionActionVariant.secondary,
             onPressed: () => _devolverRenta(context, renta),
           ),
+        // Botón "Recibir" para rentas con fecha futura (devolución anticipada)
+        if (renta.necesitaRecibir)
+          CollectionActionData(
+            label: 'Recibir',
+            icon: Icons.check_circle_outline,
+            variant: CollectionActionVariant.primary,
+            onPressed: () => _recibirVehiculo(context, renta),
+          ),
+        // Botón temporal para corregir rentas inconsistentes
+        if (renta.estado == EstadoRenta.DEVUELTA && renta.fechaDevolucion == null)
+          CollectionActionData(
+            label: 'Corregir',
+            icon: Icons.build_outlined,
+            variant: CollectionActionVariant.outlined,
+            onPressed: () => _corregirRentaInconsistente(context, renta),
+          ),
         CollectionActionData(
           label: 'Eliminar',
           icon: Icons.delete_outline,
           variant: CollectionActionVariant.danger,
-          onPressed: () => context.read<RentalProvider>().eliminarRenta(renta.noRenta!),
+          onPressed: () => _eliminarRenta(context, renta),
         ),
       ],
       footerStatus: CollectionFooterStatus(
-        label: isDevuelto ? 'Devuelto' : 'En curso',
-        color: isDevuelto ? AppColors.info : AppColors.warning,
-        icon: isDevuelto ? Icons.assignment_return : Icons.access_time,
+        label: renta.necesitaRecibir ? 'Pendiente recibo' : renta.estadoDescripcion,
+        color: renta.necesitaRecibir ? AppColors.warning : _getColorFromString(renta.estadoColor),
+        icon: _getIconFromState(renta, renta.necesitaRecibir),
       ),
     );
   }
 
+  List<Vehicle> _getAvailableVehicles(VehicleProvider vehicleProvider, RentalProvider rentalProvider, Rental? initial) {
+    // Si no hay rentas registradas, todos los vehículos están disponibles
+    if (rentalProvider.todasRentas.isEmpty) {
+      debugPrint('=== Sin rentas registradas: todos los vehículos disponibles ===');
+      return vehicleProvider.todosVehiculos;
+    }
+
+    // Obtener vehículos actualmente rentados
+    // Un vehículo NO está disponible si:
+    // 1. Hay una renta que NO está devuelta (fechaDevolucion == null)
+    // 2. Y esa renta NO está cancelada (estado != CANCELADA)
+    final vehiculosRentados = rentalProvider.todasRentas
+        .where((renta) {
+          // Un vehículo NO está disponible si:
+          // 1. La renta está activa (no cancelada)
+          // 2. Y NO ha sido realmente devuelta (esDevuelto considera fecha actual)
+          final estaCancelada = renta.estado == EstadoRenta.CANCELADA;
+          final estaRealmenteDevuelta = renta.esDevuelto; // Usa la lógica mejorada
+
+          // El vehículo está rentado si NO está cancelada Y NO está realmente devuelta
+          return !estaCancelada && !estaRealmenteDevuelta;
+        })
+        .map((renta) => renta.vehiculo?.id)
+        .where((id) => id != null)
+        .toSet();
+
+    // Si estamos editando una renta, incluir el vehículo actual
+    final vehiculoActualId = initial?.vehiculo?.id;
+
+    // Debug: Imprimir información para diagnosticar
+    debugPrint('=== DEBUG FILTRADO VEHÍCULOS ===');
+    debugPrint('Total rentas: ${rentalProvider.todasRentas.length}');
+    for (final renta in rentalProvider.todasRentas) {
+      final estaCancelada = renta.estado == EstadoRenta.CANCELADA;
+      final estaRealmenteDevuelta = renta.esDevuelto;
+      final necesitaRecibir = renta.necesitaRecibir;
+      final estaEnUso = !estaCancelada && !estaRealmenteDevuelta;
+      debugPrint('Renta ${renta.noRenta}: Estado=${renta.estado}, FechaDevolucion=${renta.fechaDevolucion}, VehiculoId=${renta.vehiculo?.id}, RealmenteDevuelta=$estaRealmenteDevuelta, NecesitaRecibir=$necesitaRecibir, EnUso=$estaEnUso');
+    }
+    debugPrint('Vehículos rentados (IDs): $vehiculosRentados');
+    debugPrint('Total vehículos disponibles filtrados: ${vehicleProvider.todosVehiculos.where((v) => !vehiculosRentados.contains(v.id)).length}');
+    debugPrint('================================');
+
+    return vehicleProvider.todosVehiculos.where((vehiculo) {
+      // Incluir vehículos que no están rentados
+      if (!vehiculosRentados.contains(vehiculo.id)) return true;
+
+      // Si estamos editando, incluir el vehículo actual de esta renta
+      if (vehiculoActualId != null && vehiculo.id == vehiculoActualId) return true;
+
+      return false;
+    }).toList();
+  }
+
   Future<void> _devolverRenta(BuildContext context, Rental renta) async {
-    final rentaDevuelta = Rental(
-      noRenta: renta.noRenta,
-      empleado: renta.empleado,
-      vehiculo: renta.vehiculo,
-      cliente: renta.cliente,
-      fechaRenta: renta.fechaRenta,
-      fechaDevolucion: DateTime.now(),
-      montoDia: renta.montoDia,
-      cantidadDias: renta.cantidadDias,
-      comentario: renta.comentario,
-      estado: renta.estado,
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Devolver Vehículo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('¿Confirma la devolución del vehículo ${renta.vehiculo?.noPlaca} de la renta #${renta.noRenta}?'),
+            const SizedBox(height: 8),
+            const Text(
+              'Esto marcará la renta como devuelta con la fecha y hora actual.',
+              style: TextStyle(fontSize: 12, color: AppColors.info),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.success),
+            child: const Text('Devolver'),
+          ),
+        ],
+      ),
     );
 
-    await context.read<RentalProvider>().actualizarRenta(rentaDevuelta);
+    if (confirmed == true && context.mounted) {
+      try {
+        await context.read<RentalProvider>().devolverVehiculo(renta.noRenta!, DateTime.now());
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Vehículo devuelto exitosamente'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al devolver vehículo: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _eliminarRenta(BuildContext context, Rental renta) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: Text('¿Está seguro que desea eliminar la renta #${renta.noRenta}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await context.read<RentalProvider>().eliminarRenta(renta.noRenta!);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Renta eliminada exitosamente'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al eliminar renta: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _recibirVehiculo(BuildContext context, Rental renta) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Recibir Vehículo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('¿Confirma que está recibiendo el vehículo ${renta.vehiculo?.noPlaca} de la renta #${renta.noRenta}?'),
+            const SizedBox(height: 8),
+            if (renta.fechaDevolucion != null)
+              Text(
+                'Fecha programada: ${renta.fechaDevolucion!.day}/${renta.fechaDevolucion!.month}/${renta.fechaDevolucion!.year}',
+                style: const TextStyle(fontSize: 12, color: AppColors.grayDark),
+              ),
+            const SizedBox(height: 8),
+            const Text(
+              'Esto marcará la renta como devuelta con la fecha y hora actual.',
+              style: TextStyle(fontSize: 12, color: AppColors.info),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.success),
+            child: const Text('Recibir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await context.read<RentalProvider>().recibirVehiculo(renta.noRenta!);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Vehículo recibido exitosamente'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al recibir vehículo: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _corregirRentaInconsistente(BuildContext context, Rental renta) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Corregir Renta Inconsistente'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('La renta #${renta.noRenta} tiene estado "DEVUELTA" pero no tiene fecha de devolución registrada.'),
+            const SizedBox(height: 8),
+            const Text('¿Desea corregir esto estableciendo la fecha de devolución actual?'),
+            const SizedBox(height: 8),
+            const Text('Nota: Esta es una solución temporal para resolver inconsistencias de datos.',
+              style: TextStyle(fontSize: 12, color: AppColors.warning)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.warning),
+            child: const Text('Corregir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        context.read<RentalProvider>().marcarComoDevuelta(renta.noRenta!);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Renta corregida exitosamente'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al corregir renta: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// Convierte string de color a Color de AppColors
+  Color _getColorFromString(String colorString) {
+    switch (colorString) {
+      case 'info':
+        return AppColors.info;
+      case 'success':
+        return AppColors.success;
+      case 'primary':
+        return AppColors.primary;
+      case 'warning':
+        return AppColors.warning;
+      case 'danger':
+        return AppColors.danger;
+      default:
+        return AppColors.grayDark;
+    }
+  }
+
+  /// Obtiene el ícono apropiado basado en el estado de la renta
+  IconData _getIconFromState(Rental renta, bool necesitaRecibir) {
+    if (necesitaRecibir) return Icons.schedule;
+
+    switch (renta.estadoCalculado) {
+      case EstadoRenta.RESERVADA:
+        return Icons.event_available;      // Calendario disponible
+      case EstadoRenta.ACTIVA:
+        return Icons.drive_eta;           // Auto en uso
+      case EstadoRenta.DEVUELTA:
+        return Icons.assignment_return;   // Devuelto
+      case EstadoRenta.VENCIDA:
+        return Icons.warning;             // Advertencia
+      case EstadoRenta.CANCELADA:
+        return Icons.cancel;              // Cancelado
+      case EstadoRenta.PERDIDA:
+        return Icons.error;               // Error/perdido
+    }
+  }
+
+  void _showReportDialog(BuildContext context) {
+    final vehicleProvider = context.read<VehicleProvider>();
+    final rentalProvider = context.read<RentalProvider>();
+
+    showDialog(
+      context: context,
+      builder: (context) => _RentalReportDialog(
+        vehicleProvider: vehicleProvider,
+        rentalProvider: rentalProvider,
+      ),
+    );
+  }
+}
+
+class _RentalReportDialog extends StatefulWidget {
+  final VehicleProvider vehicleProvider;
+  final RentalProvider rentalProvider;
+
+  const _RentalReportDialog({
+    required this.vehicleProvider,
+    required this.rentalProvider,
+  });
+
+  @override
+  _RentalReportDialogState createState() => _RentalReportDialogState();
+}
+
+class _RentalReportDialogState extends State<_RentalReportDialog> {
+  DateTime? _startDate;
+  DateTime? _endDate;
+  String? _selectedVehicleType;
+  String? _selectedStatus;
+  bool _includeCharts = true;
+  bool _includeSummary = true;
+  String? _dateValidationError;
+
+  // Obtener tipos de vehículos dinámicamente
+  List<String> get _vehicleTypes {
+    final types = widget.vehicleProvider.todosVehiculos
+        .where((vehicle) => vehicle.tipoVehiculo != null)
+        .map((vehicle) => vehicle.tipoVehiculo!.descripcion)
+        .toSet() // Remover duplicados
+        .toList();
+    types.sort(); // Ordenar alfabéticamente
+    return types;
+  }
+
+  // Estados de renta con etiquetas amigables
+  final Map<String, String> _statusLabels = {
+    'ACTIVA': 'En renta',
+    'DEVUELTA': 'Devuelta',
+    'VENCIDA': 'Vencida',
+    'CANCELADA': 'Cancelada',
+    'RESERVADA': 'Reservada',
+    'PERDIDA': 'Perdida',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    // Validar selecciones al inicializar
+    _validateSelections();
+  }
+
+  // Validar que las selecciones actuales sigan siendo válidas
+  void _validateSelections() {
+    // Validar tipo de vehículo
+    if (_selectedVehicleType != null && !_vehicleTypes.contains(_selectedVehicleType)) {
+      _selectedVehicleType = null;
+    }
+
+    // Validar estado
+    if (_selectedStatus != null && !_statusLabels.containsKey(_selectedStatus)) {
+      _selectedStatus = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          Icon(Icons.picture_as_pdf, color: AppColors.primary),
+          SizedBox(width: 8),
+          Text('Generar Reporte PDF'),
+        ],
+      ),
+      content: Container(
+        width: 500,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Configuración del Reporte',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              SizedBox(height: 16),
+
+              // Fechas
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _selectDate(context, true),
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Fecha Inicio',
+                          border: OutlineInputBorder(),
+                          errorText: _dateValidationError != null && _dateValidationError!.contains('inicio') ? _dateValidationError : null,
+                        ),
+                        child: Text(_startDate?.toString().split(' ')[0] ?? 'Seleccionar'),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _selectDate(context, false),
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Fecha Fin',
+                          border: OutlineInputBorder(),
+                          errorText: _dateValidationError != null && _dateValidationError!.contains('fin') ? _dateValidationError : null,
+                        ),
+                        child: Text(_endDate?.toString().split(' ')[0] ?? 'Seleccionar'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (_dateValidationError != null) ...[
+                SizedBox(height: 8),
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.danger.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: AppColors.danger, size: 16),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _dateValidationError!,
+                          style: TextStyle(color: AppColors.danger, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              SizedBox(height: 16),
+
+              // Filtros
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  labelText: 'Tipo de Vehículo',
+                  border: OutlineInputBorder(),
+                ),
+                value: _selectedVehicleType,
+                items: [
+                  DropdownMenuItem(value: null, child: Text('Todos')),
+                  ..._vehicleTypes.map((type) =>
+                    DropdownMenuItem(value: type, child: Text(type))),
+                ],
+                onChanged: (value) => setState(() => _selectedVehicleType = value),
+              ),
+              SizedBox(height: 12),
+
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  labelText: 'Estado de Renta',
+                  border: OutlineInputBorder(),
+                ),
+                value: _selectedStatus,
+                items: [
+                  DropdownMenuItem(value: null, child: Text('Todos')),
+                  ..._statusLabels.entries.map((entry) =>
+                    DropdownMenuItem(value: entry.key, child: Text(entry.value))),
+                ],
+                onChanged: (value) => setState(() => _selectedStatus = value),
+              ),
+              SizedBox(height: 16),
+
+              // Opciones
+              Text('Opciones del Reporte',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              CheckboxListTile(
+                title: Text('Incluir gráficos'),
+                value: _includeCharts,
+                onChanged: (value) => setState(() => _includeCharts = value ?? true),
+              ),
+              CheckboxListTile(
+                title: Text('Incluir resumen estadístico'),
+                value: _includeSummary,
+                onChanged: (value) => setState(() => _includeSummary = value ?? true),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Cancelar'),
+        ),
+        ElevatedButton.icon(
+          onPressed: () => _generateReport(context),
+          icon: Icon(Icons.download),
+          label: Text('Generar PDF'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.white,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isStart) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          // Si hay fecha fin y la nueva fecha inicio es después, mostrar error
+          if (_endDate != null && picked.isAfter(_endDate!)) {
+            _dateValidationError = 'La fecha de inicio no puede ser posterior a la fecha fin';
+            return;
+          }
+          _startDate = picked;
+          _dateValidationError = null; // Limpiar error si la fecha es válida
+        } else {
+          // Si hay fecha inicio y la nueva fecha fin es antes, mostrar error
+          if (_startDate != null && picked.isBefore(_startDate!)) {
+            _dateValidationError = 'La fecha fin no puede ser anterior a la fecha de inicio';
+            return;
+          }
+          _endDate = picked;
+          _dateValidationError = null; // Limpiar error si la fecha es válida
+        }
+      });
+    }
+  }
+
+  Future<void> _generateReport(BuildContext context) async {
+    // Validar fechas antes de generar reporte
+    if (_startDate != null && _endDate != null && _startDate!.isAfter(_endDate!)) {
+      setState(() {
+        _dateValidationError = 'La fecha de inicio no puede ser posterior a la fecha fin';
+      });
+      return;
+    }
+
+    // Si hay error de validación, no generar reporte
+    if (_dateValidationError != null) {
+      return;
+    }
+
+    Navigator.of(context).pop();
+
+    // Mostrar indicador de progreso
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text('Generando reporte PDF...'),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        duration: Duration(seconds: 3),
+      ),
+    );
+
+    try {
+      final reportService = RentalReportService();
+      final rentalProvider = context.read<RentalProvider>();
+      final success = await reportService.generatePDFReport(
+        rentalProvider: rentalProvider,
+        startDate: _startDate,
+        endDate: _endDate,
+        vehicleType: _selectedVehicleType,
+        status: _selectedStatus,
+        includeCharts: _includeCharts,
+        includeSummary: _includeSummary,
+      );
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('¡Reporte PDF generado y descargado exitosamente!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar el reporte. Intente nuevamente.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 }

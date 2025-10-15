@@ -4,6 +4,10 @@ class DashboardSummary {
   final int totalClients;
   final int totalActiveRentals;
   final int totalInspections;
+  final double monthlyRevenue;
+  final double averageRentalDuration;
+  final int overdueRentals;
+  final double vehicleUtilizationRate;
   final Map<String, int> vehiclesByType;
   final Map<String, int> rentalsByMonth;
   final Map<String, int> clientsByType;
@@ -13,6 +17,10 @@ class DashboardSummary {
     required this.totalClients,
     required this.totalActiveRentals,
     required this.totalInspections,
+    required this.monthlyRevenue,
+    required this.averageRentalDuration,
+    required this.overdueRentals,
+    required this.vehicleUtilizationRate,
     required this.vehiclesByType,
     required this.rentalsByMonth,
     required this.clientsByType,
@@ -24,6 +32,10 @@ class DashboardSummary {
       totalClients: 0,
       totalActiveRentals: 0,
       totalInspections: 0,
+      monthlyRevenue: 0.0,
+      averageRentalDuration: 0.0,
+      overdueRentals: 0,
+      vehicleUtilizationRate: 0.0,
       vehiclesByType: {},
       rentalsByMonth: {},
       clientsByType: {},
@@ -118,5 +130,52 @@ class VehicleStats {
     required this.rentedVehicles,
     required this.inMaintenanceVehicles,
     required this.totalVehicles,
+  });
+}
+
+/// Filtros para reportes de rentas
+class RentalReportFilters {
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String? vehicleType;
+  final String? clientType;
+  final String? status;
+  final int? employeeId;
+
+  RentalReportFilters({
+    this.startDate,
+    this.endDate,
+    this.vehicleType,
+    this.clientType,
+    this.status,
+    this.employeeId,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      if (startDate != null) 'startDate': startDate!.toIso8601String().split('T')[0],
+      if (endDate != null) 'endDate': endDate!.toIso8601String().split('T')[0],
+      if (vehicleType != null) 'vehicleType': vehicleType,
+      if (clientType != null) 'clientType': clientType,
+      if (status != null) 'status': status,
+      if (employeeId != null) 'employeeId': employeeId,
+    };
+  }
+}
+
+/// Configuración de reporte
+class ReportConfig {
+  final String title;
+  final String description;
+  final bool includeCharts;
+  final bool includeSummary;
+  final List<String> columns;
+
+  ReportConfig({
+    required this.title,
+    required this.description,
+    this.includeCharts = true,
+    this.includeSummary = true,
+    required this.columns,
   });
 }

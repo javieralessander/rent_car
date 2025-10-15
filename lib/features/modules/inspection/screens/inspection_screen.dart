@@ -372,10 +372,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
     String employeeName,
   ) {
     final isActive = inspeccion.estado;
-    final hasIssues = inspeccion.tieneRalladuras ||
-                      inspeccion.tieneRoturasCristal ||
-                      !inspeccion.tieneGato ||
-                      !inspeccion.tieneGomaRespuesta;
+    final hasIssues = inspeccion.tieneObservaciones;
 
     return CollectionItemData(
       header: CollectionHeaderData(

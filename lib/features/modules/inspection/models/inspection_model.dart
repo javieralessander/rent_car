@@ -120,6 +120,23 @@ class Inspection {
     return 'Lleno';
   }
 
+  /// Indica si la inspección tiene observaciones (algún problema encontrado)
+  bool get tieneObservaciones {
+    return tieneRalladuras ||
+           !tieneGomaRespuesta ||
+           !tieneGato ||
+           tieneRoturasCristal ||
+           !estadoGoma1 ||
+           !estadoGoma2 ||
+           !estadoGoma3 ||
+           !estadoGoma4;
+  }
+
+  /// Estado de la inspección para mostrar en la UI
+  String get estadoInspeccion {
+    return tieneObservaciones ? 'Con observaciones' : 'Sin observaciones';
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'vehiculo': {'id': vehiculo},

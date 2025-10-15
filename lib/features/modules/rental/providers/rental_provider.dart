@@ -62,7 +62,15 @@ class RentalProvider extends ChangeNotifier {
       debugPrint('Error al cargar rentas: $e');
       _todos = [];
       _pagina = [];
-      _error = 'Error al cargar rentas: $e';
+
+      // Mejorar el mensaje de error basado en el tipo
+      if (e.toString().contains('Sin conexión al servidor') ||
+          e.toString().contains('Error de conexión') ||
+          e.toString().contains('Error de red')) {
+        _error = 'No se puede conectar al servidor. Verifique que el backend esté ejecutándose.';
+      } else {
+        _error = 'Error al cargar rentas: $e';
+      }
     }
 
     _isLoading = false;
@@ -167,10 +175,7 @@ class RentalProvider extends ChangeNotifier {
         throw Exception('Este vehículo ya ha sido devuelto');
       }
 
-      if (fechaDevolucion.isBefore(rental.fechaRenta)) {
-        throw Exception('La fecha de devolución no puede ser anterior a la fecha de renta');
-      }
-
+      // Usar el servicio backend que maneja la fecha automáticamente
       final devuelta = await RentalService.devolver(id);
       final index = _todos.indexWhere((r) => r.noRenta == devuelta.noRenta);
       if (index != -1) {
@@ -192,6 +197,60 @@ class RentalProvider extends ChangeNotifier {
       _actualizarPagina();
     } catch (e) {
       debugPrint('Error al eliminar renta: $e');
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Método auxiliar para corregir rentas inconsistentes (solo para desarrollo/admin)
+  void marcarComoDevuelta(int rentalId) {
+    final index = _todos.indexWhere((r) => r.noRenta == rentalId);
+    if (index != -1) {
+      final rental = _todos[index];
+      final rentaCorregida = Rental(
+        noRenta: rental.noRenta,
+        empleado: rental.empleado,
+        vehiculo: rental.vehiculo,
+        cliente: rental.cliente,
+        fechaRenta: rental.fechaRenta,
+        fechaDevolucion: DateTime.now(), // Establecer fecha actual
+        montoDia: rental.montoDia,
+        cantidadDias: rental.cantidadDias,
+        comentario: rental.comentario,
+        estado: EstadoRenta.DEVUELTA, // Asegurar estado correcto
+      );
+      _todos[index] = rentaCorregida;
+      _actualizarPagina();
+      debugPrint('Renta $rentalId marcada como devuelta localmente');
+    }
+  }
+
+  // Método para recibir vehículo cuando llega antes de la fecha programada
+  Future<void> recibirVehiculo(int id) async {
+    try {
+      final rental = _todos.firstWhere((r) => r.noRenta == id);
+
+      if (rental.esDevuelto) {
+        throw Exception('Este vehículo ya ha sido recibido');
+      }
+
+      if (!rental.necesitaRecibir) {
+        throw Exception('Esta renta no necesita ser recibida manualmente');
+      }
+
+      // Usar el servicio de devolución existente
+      final devuelta = await RentalService.devolver(id);
+      final index = _todos.indexWhere((r) => r.noRenta == devuelta.noRenta);
+      if (index != -1) {
+        _todos[index] = devuelta;
+        _actualizarPagina();
+      }
+    } catch (e) {
+      debugPrint('Error al recibir vehículo: $e');
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
     }
   }
 

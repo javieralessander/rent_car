@@ -345,9 +345,76 @@ class _ClientScreenState extends State<ClientScreen> {
     Client? initialData,
     Map<String, dynamic>? formValues,
   ) {
-    // Get current tipo de persona from form values or initial data
-    final currentTipoPersona = formValues?['tipoPersona'] as TipoPersona? ??
-        initialData?.tipoPersona ??
+    return _DynamicCedulaFieldWidget(
+      controller: controller,
+      initialData: initialData,
+      formValues: formValues,
+    );
+  }
+}
+
+/// Widget separado para manejar el campo de cédula/RNC con validación en tiempo real
+class _DynamicCedulaFieldWidget extends StatefulWidget {
+  final dynamic controller;
+  final Client? initialData;
+  final Map<String, dynamic>? formValues;
+
+  const _DynamicCedulaFieldWidget({
+    required this.controller,
+    required this.initialData,
+    required this.formValues,
+  });
+
+  @override
+  State<_DynamicCedulaFieldWidget> createState() => _DynamicCedulaFieldWidgetState();
+}
+
+class _DynamicCedulaFieldWidgetState extends State<_DynamicCedulaFieldWidget> {
+  late TextEditingController _textController;
+  String? _currentError;
+  final GlobalKey _fieldKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(text: widget.controller.value ?? '');
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  void _validateField(String value) {
+    final currentTipoPersona = widget.formValues?['tipoPersona'] as TipoPersona? ??
+        widget.initialData?.tipoPersona ??
+        TipoPersona.FISICA;
+
+    final isPersonaFisica = currentTipoPersona == TipoPersona.FISICA;
+    final fieldLabel = isPersonaFisica ? 'Cédula' : 'RNC';
+
+    String? error;
+
+    if ((value.trim()).isEmpty) {
+      error = '$fieldLabel es requerido';
+    } else {
+      if (isPersonaFisica) {
+        error = InputValidators.cedulaDominicana(value, fieldName: fieldLabel);
+      } else {
+        error = InputValidators.rncDominicano(value, fieldName: fieldLabel);
+      }
+    }
+
+    setState(() {
+      _currentError = error;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentTipoPersona = widget.formValues?['tipoPersona'] as TipoPersona? ??
+        widget.initialData?.tipoPersona ??
         TipoPersona.FISICA;
 
     final isPersonaFisica = currentTipoPersona == TipoPersona.FISICA;
@@ -355,11 +422,12 @@ class _ClientScreenState extends State<ClientScreen> {
     final fieldHint = isPersonaFisica ? 'XXX-XXXXXXX-X' : 'XXXXXXXXX';
 
     return TextFormField(
-      key: ValueKey('${fieldLabel}_${currentTipoPersona.name}'), // Force rebuild when type changes
-      initialValue: controller.value ?? '',
+      key: ValueKey('${fieldLabel}_${currentTipoPersona.name}'),
+      controller: _textController,
       decoration: InputDecoration(
         labelText: fieldLabel,
         hintText: fieldHint,
+        errorText: _currentError,
       ),
       keyboardType: TextInputType.number,
       inputFormatters: isPersonaFisica
@@ -371,19 +439,14 @@ class _ClientScreenState extends State<ClientScreen> {
         }
 
         if (isPersonaFisica) {
-          return InputValidators.cedulaDominicana(
-            value,
-            fieldName: fieldLabel,
-          );
+          return InputValidators.cedulaDominicana(value, fieldName: fieldLabel);
         } else {
-          return InputValidators.rncDominicano(
-            value,
-            fieldName: fieldLabel,
-          );
+          return InputValidators.rncDominicano(value, fieldName: fieldLabel);
         }
       },
       onChanged: (value) {
-        controller.setValue(value);
+        widget.controller.setValue(value);
+        _validateField(value);
       },
     );
   }
@@ -407,6 +470,7 @@ class _CreditCardFieldWidget extends StatefulWidget {
 class _CreditCardFieldWidgetState extends State<_CreditCardFieldWidget> {
   late TextEditingController _textController;
   late ValueNotifier<CreditCardType> _cardTypeNotifier;
+  String? _currentError;
   final GlobalKey _fieldKey = GlobalKey();
 
   @override
@@ -430,6 +494,13 @@ class _CreditCardFieldWidgetState extends State<_CreditCardFieldWidget> {
     }
   }
 
+  void _validateField(String value) {
+    final error = InputValidators.creditCard(value, fieldName: 'No. Tarjeta CR');
+    setState(() {
+      _currentError = error;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -438,10 +509,11 @@ class _CreditCardFieldWidgetState extends State<_CreditCardFieldWidget> {
         TextFormField(
           key: _fieldKey,
           controller: _textController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'No. Tarjeta CR',
             hintText: 'XXXX XXXX XXXX XXXX',
-            contentPadding: EdgeInsets.fromLTRB(12, 16, 48, 16), // Espacio para el ícono
+            contentPadding: const EdgeInsets.fromLTRB(12, 16, 48, 16), // Espacio para el ícono
+            errorText: _currentError,
           ),
           keyboardType: TextInputType.number,
           inputFormatters: InputFormatters.cardNumber(),
@@ -452,6 +524,7 @@ class _CreditCardFieldWidgetState extends State<_CreditCardFieldWidget> {
           onChanged: (value) {
             widget.controller.setValue(value);
             _updateCardType(value);
+            _validateField(value);
           },
         ),
         // Ícono flotante que se actualiza independientemente

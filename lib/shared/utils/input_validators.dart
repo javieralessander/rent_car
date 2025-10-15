@@ -422,7 +422,7 @@ class InputValidators {
     final trimmed = value?.trim() ?? '';
     if (trimmed.isEmpty) return '$fieldName es requerida';
 
-    // Remover guiones para validar solo dígitos
+    // Remover guiones para validar
     final digitsOnly = trimmed.replaceAll('-', '');
 
     if (digitsOnly.length != 11) {
@@ -431,6 +431,11 @@ class InputValidators {
 
     if (!RegExp(r'^\d{11}$').hasMatch(digitsOnly)) {
       return '$fieldName solo debe contener números';
+    }
+
+    // Aplicar algoritmo de validación dominicano
+    if (!_validaCedulaDominicana(digitsOnly)) {
+      return 'Cédula ingresada no es válida, por favor verifique los dígitos';
     }
 
     return null;
@@ -443,15 +448,85 @@ class InputValidators {
     final trimmed = value?.trim() ?? '';
     if (trimmed.isEmpty) return '$fieldName es requerido';
 
-    if (trimmed.length != 9) {
+    final digitsOnly = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digitsOnly.length != 9) {
       return '$fieldName debe tener 9 dígitos';
     }
 
-    if (!RegExp(r'^\d{9}$').hasMatch(trimmed)) {
+    if (!RegExp(r'^\d{9}$').hasMatch(digitsOnly)) {
       return '$fieldName solo debe contener números';
     }
 
+    // Aplicar algoritmo de validación RNC dominicano
+    if (!_validarRNCDominicano(digitsOnly)) {
+      return 'RNC ingresado no es válido, por favor verifique los dígitos';
+    }
+
     return null;
+  }
+
+  /// Algoritmo de validación de cédula dominicana
+  static bool _validaCedulaDominicana(String pCedula) {
+    int vnTotal = 0;
+    String vcCedula = pCedula.replaceAll('-', '').trim();
+    int pLongCed = vcCedula.length;
+    List<int> digitoMult = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1];
+
+    if (pLongCed != 11) {
+      return false;
+    }
+
+    // Verificar que todos sean dígitos
+    if (!RegExp(r'^\d{11}$').hasMatch(vcCedula)) {
+      return false;
+    }
+
+    for (int vDig = 1; vDig <= pLongCed; vDig++) {
+      int vCalculo = int.parse(vcCedula.substring(vDig - 1, vDig)) * digitoMult[vDig - 1];
+      if (vCalculo < 10) {
+        vnTotal += vCalculo;
+      } else {
+        String vCalculoStr = vCalculo.toString();
+        vnTotal += int.parse(vCalculoStr.substring(0, 1)) + int.parse(vCalculoStr.substring(1, 2));
+      }
+    }
+
+    return vnTotal % 10 == 0;
+  }
+
+  /// Algoritmo de validación de RNC dominicano
+  static bool _validarRNCDominicano(String rnc) {
+    rnc = rnc.trim();
+    List<int> peso = [7, 9, 8, 6, 5, 4, 3, 2];
+    int suma = 0;
+
+    if (rnc.length != 9) {
+      return false;
+    }
+
+    // Verificar que todos sean dígitos
+    if (!RegExp(r'^\d{9}$').hasMatch(rnc)) {
+      return false;
+    }
+
+    for (int i = 0; i < 8; i++) {
+      suma += int.parse(rnc[i]) * peso[i];
+    }
+
+    int division = suma ~/ 11;
+    int resto = suma - (division * 11);
+    int digito = 0;
+
+    if (resto == 0) {
+      digito = 2;
+    } else if (resto == 1) {
+      digito = 1;
+    } else {
+      digito = 11 - resto;
+    }
+
+    return digito == int.parse(rnc[8]);
   }
 
   static String? creditCard(

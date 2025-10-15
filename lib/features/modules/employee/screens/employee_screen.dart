@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
@@ -181,6 +182,10 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               minValue: 0.0,
               maxValue: 100.0,
             ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^[0-9]*\.?[0-9]{0,2}')),
+                // Solo permite números positivos y hasta dos decimales
+              ],
             getValue: (v) => v?.porcientoComision,
             applyValue: (v, value) => Employee(
               id: v?.id ?? initial?.id ?? 0,
@@ -261,40 +266,36 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
       ),
       details: [
         CollectionDetailInfo(
-          label: 'Identificador',
-          value: '#${empleado.id}',
-          inlineValue: 'ID ${empleado.id}',
-          icon: Icons.confirmation_number_outlined,
-        ),
-        CollectionDetailInfo(
           label: 'Cédula',
           value: empleado.cedula,
-          inlineValue: 'Cédula: ${empleado.cedula}',
+          inlineValue: empleado.cedula,
           icon: Icons.credit_card_outlined,
+          iconColor: AppColors.primary,
+          iconBackground: AppColors.primary.withOpacity(0.14),
         ),
         CollectionDetailInfo(
-          label: 'Tanda Labor',
+          label: 'Tanda',
           value: tandaText,
           inlineValue: tandaText,
           icon: Icons.schedule_outlined,
+          iconColor: AppColors.info,
+          iconBackground: AppColors.info.withOpacity(0.16),
         ),
         CollectionDetailInfo(
           label: 'Comisión',
           value: '${empleado.porcientoComision.toStringAsFixed(1)}%',
-          inlineValue: 'Comisión: ${empleado.porcientoComision.toStringAsFixed(1)}%',
+          inlineValue: '${empleado.porcientoComision.toStringAsFixed(1)}%',
           icon: Icons.percent_outlined,
+          iconColor: AppColors.warning,
+          iconBackground: AppColors.warning.withOpacity(0.18),
         ),
         CollectionDetailInfo(
-          label: 'Fecha Ingreso',
+          label: 'Ingreso',
           value: '${empleado.fechaIngreso.day}/${empleado.fechaIngreso.month}/${empleado.fechaIngreso.year}',
-          inlineValue: 'Ingreso: ${empleado.fechaIngreso.day}/${empleado.fechaIngreso.month}/${empleado.fechaIngreso.year}',
+          inlineValue: '${empleado.fechaIngreso.day}/${empleado.fechaIngreso.month}/${empleado.fechaIngreso.year}',
           icon: Icons.calendar_today_outlined,
-        ),
-        CollectionDetailInfo(
-          label: 'Estado',
-          value: isActive ? 'Activo' : 'Inactivo',
-          inlineValue: isActive ? 'Activo' : 'Inactivo',
-          icon: isActive ? Icons.check_circle_outline : Icons.pause_circle_outline,
+          iconColor: AppColors.success,
+          iconBackground: AppColors.success.withOpacity(0.16),
         ),
       ],
       actions: [

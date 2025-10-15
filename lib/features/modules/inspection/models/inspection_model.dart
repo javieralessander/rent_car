@@ -92,19 +92,19 @@ class Inspection {
 
   Map<String, dynamic> toJson() {
     return {
-      'vehiculo': vehiculo,
-      'cliente': cliente,
+      'vehiculo': {'id': vehiculo},
+      'cliente': {'id': cliente},
       'tieneRalladuras': tieneRalladuras,
-      'cantidadCombustible': cantidadCombustibleString,
+      'cantidadCombustible': cantidadCombustibleString.toUpperCase().replaceAll('/', '_').replaceAll(' ', '_'),
       'tieneGomaRespuesta': tieneGomaRespuesta,
       'tieneGato': tieneGato,
       'tieneRoturasCristal': tieneRoturasCristal,
-      'estadoGoma1': estadoGoma1,
-      'estadoGoma2': estadoGoma2,
-      'estadoGoma3': estadoGoma3,
-      'estadoGoma4': estadoGoma4,
+      'estadoGomaDelanteraIzq': estadoGoma1,
+      'estadoGomaDelanteraDer': estadoGoma2,
+      'estadoGomaTraseraIzq': estadoGoma3,
+      'estadoGomaTraseraDer': estadoGoma4,
       'fecha': fecha.toIso8601String(),
-      'empleadoInspeccion': empleadoInspeccion,
+      'empleado': {'id': empleadoInspeccion},
       'estado': estado,
     };
   }

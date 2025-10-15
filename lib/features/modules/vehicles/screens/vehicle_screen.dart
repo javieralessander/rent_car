@@ -337,7 +337,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
           }
           return null;
         },
-        getValue: (v) => v?.tipoVehiculoId ?? defaultOption(typeOptions),
+        getValue: (v) => v?.tipoVehiculoId,
         applyValue:
             (v, value) => VehicleForm(
               id: v?.id ?? initial?.id,
@@ -363,7 +363,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
           }
           return null;
         },
-        getValue: (v) => v?.marcaId ?? defaultOption(brandOptions),
+        getValue: (v) => v?.marcaId,
         applyValue:
             (v, value) => VehicleForm(
               id: v?.id ?? initial?.id,
@@ -389,7 +389,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
           }
           return null;
         },
-        getValue: (v) => v?.modeloId ?? defaultOption(modelOptions),
+        getValue: (v) => v?.modeloId,
         applyValue:
             (v, value) => VehicleForm(
               id: v?.id ?? initial?.id,
@@ -415,7 +415,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
           }
           return null;
         },
-        getValue: (v) => v?.tipoCombustibleId ?? defaultOption(fuelOptions),
+        getValue: (v) => v?.tipoCombustibleId,
         applyValue:
             (v, value) => VehicleForm(
               id: v?.id ?? initial?.id,
@@ -438,7 +438,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
           {'value': true, 'label': 'Activo'},
           {'value': false, 'label': 'Inactivo'},
         ],
-        getValue: (v) => v?.estado ?? true,
+        getValue: (v) => v?.estado,
         applyValue:
             (v, value) => VehicleForm(
               id: v?.id ?? initial?.id,

@@ -94,7 +94,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           id: previous?.id ?? initial?.id ?? 0,
           nombre: values['nombre'] ?? previous?.nombre ?? initial?.nombre ?? '',
           cedula: values['cedula'] ?? previous?.cedula ?? initial?.cedula ?? '',
-          tandaLabor: values['tandaLabor'] ?? previous?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.matutina,
+          tandaLabor: values['tandaLabor'] ?? previous?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.MATUTINA,
           porcientoComision: (() {
             final val = values['porcientoComision'];
             if (val is double) return val;
@@ -120,7 +120,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               id: v?.id ?? initial?.id ?? 0,
               nombre: value,
               cedula: v?.cedula ?? initial?.cedula ?? '',
-              tandaLabor: v?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.matutina,
+              tandaLabor: v?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.MATUTINA,
               porcientoComision: v?.porcientoComision ?? initial?.porcientoComision ?? 0.0,
               fechaIngreso: v?.fechaIngreso ?? initial?.fechaIngreso ?? DateTime.now(),
               estado: v?.estado ?? initial?.estado ?? true,
@@ -139,7 +139,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
               cedula: value,
-              tandaLabor: v?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.matutina,
+              tandaLabor: v?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.MATUTINA,
               porcientoComision: v?.porcientoComision ?? initial?.porcientoComision ?? 0.0,
               fechaIngreso: v?.fechaIngreso ?? initial?.fechaIngreso ?? DateTime.now(),
               estado: v?.estado ?? initial?.estado ?? true,
@@ -150,9 +150,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             label: 'Tanda de Labor',
             fieldType: 'dropdown',
             options: const [
-              {'value': TandaLabor.matutina, 'label': 'Matutina'},
-              {'value': TandaLabor.vespertina, 'label': 'Vespertina'},
-              {'value': TandaLabor.nocturna, 'label': 'Nocturna'},
+              {'value': TandaLabor.MATUTINA, 'label': 'Matutina'},
+              {'value': TandaLabor.VESPERTINA, 'label': 'Vespertina'},
+              {'value': TandaLabor.NOCTURNA, 'label': 'Nocturna'},
             ],
             validator: (value) {
               if (value == null) {
@@ -160,7 +160,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.tandaLabor ?? TandaLabor.matutina,
+            getValue: (v) => v?.tandaLabor,
             applyValue: (v, value) => Employee(
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
@@ -181,12 +181,12 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               minValue: 0.0,
               maxValue: 100.0,
             ),
-            getValue: (v) => v?.porcientoComision ?? 0.0,
+            getValue: (v) => v?.porcientoComision,
             applyValue: (v, value) => Employee(
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
               cedula: v?.cedula ?? initial?.cedula ?? '',
-              tandaLabor: v?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.matutina,
+              tandaLabor: v?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.MATUTINA,
               porcientoComision: (() {
                 if (value is double) return value;
                 if (value is int) return value.toDouble();
@@ -201,12 +201,12 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
             key: 'fechaIngreso',
             label: 'Fecha de Ingreso',
             fieldType: 'date',
-            getValue: (v) => v?.fechaIngreso ?? DateTime.now(),
+            getValue: (v) => v?.fechaIngreso,
             applyValue: (v, value) => Employee(
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
               cedula: v?.cedula ?? initial?.cedula ?? '',
-              tandaLabor: v?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.matutina,
+              tandaLabor: v?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.MATUTINA,
               porcientoComision: v?.porcientoComision ?? initial?.porcientoComision ?? 0.0,
               fechaIngreso: value as DateTime,
               estado: v?.estado ?? initial?.estado ?? true,
@@ -220,12 +220,12 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
               {'value': true, 'label': 'Activo'},
               {'value': false, 'label': 'Inactivo'},
             ],
-            getValue: (v) => v?.estado ?? true,
+            getValue: (v) => v?.estado,
             applyValue: (v, value) => Employee(
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
               cedula: v?.cedula ?? initial?.cedula ?? '',
-              tandaLabor: v?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.matutina,
+              tandaLabor: v?.tandaLabor ?? initial?.tandaLabor ?? TandaLabor.MATUTINA,
               porcientoComision: v?.porcientoComision ?? initial?.porcientoComision ?? 0.0,
               fechaIngreso: v?.fechaIngreso ?? initial?.fechaIngreso ?? DateTime.now(),
               estado: value as bool,
@@ -321,11 +321,11 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
 
   String _getTandaLaborText(TandaLabor tanda) {
     switch (tanda) {
-      case TandaLabor.matutina:
+      case TandaLabor.MATUTINA:
         return 'Matutina';
-      case TandaLabor.vespertina:
+      case TandaLabor.VESPERTINA:
         return 'Vespertina';
-      case TandaLabor.nocturna:
+      case TandaLabor.NOCTURNA:
         return 'Nocturna';
     }
   }

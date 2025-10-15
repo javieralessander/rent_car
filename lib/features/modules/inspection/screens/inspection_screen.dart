@@ -128,7 +128,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
       context: context,
       builder: (_) => GenericFormDialog<Inspection>(
         title: isEditing ? 'Editar Inspección' : 'Nueva Inspección',
-        initialData: initial,
+        initialData: isEditing ? initial : null,
         onSubmit: (inspection) async {
           if (isEditing) {
             await context.read<InspectionProvider>().actualizarInspeccion(inspection);
@@ -210,7 +210,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
             key: 'fecha',
             label: 'Fecha de Inspección',
             fieldType: 'date',
-            getValue: (inspection) => inspection?.fecha ?? DateTime.now(),
+            getValue: (inspection) => inspection?.fecha,
             applyValue: (inspection, value) => inspection,
             validator: (value) {
               if (value == null) {
@@ -223,7 +223,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
             key: 'cantidadCombustible',
             label: 'Cantidad de Combustible',
             fieldType: 'dropdown',
-            getValue: (inspection) => inspection?.cantidadCombustible ?? CantidadCombustible.unCuarto,
+            getValue: (inspection) => inspection?.cantidadCombustible,
             applyValue: (inspection, value) => inspection,
             options: const [
               {'value': CantidadCombustible.unCuarto, 'label': '1/4'},
@@ -348,7 +348,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
             key: 'estado',
             label: 'Inspección Activa',
             fieldType: 'boolean',
-            getValue: (inspection) => inspection?.estado ?? true,
+            getValue: (inspection) => inspection?.estado,
             applyValue: (inspection, value) => inspection,
             validator: (value) {
               if (value == null) {
@@ -547,22 +547,48 @@ class _InspectionScreenState extends State<InspectionScreen> {
 
   // Helper method to convert form values to Inspection object
   Inspection _mapToInspection(Map<String, dynamic> values, Inspection? initial) {
+    // Helper function to safely extract int from form values
+    int _extractInt(dynamic value, int defaultValue, String fieldName) {
+      print('DEBUG: $fieldName value: $value (type: ${value.runtimeType})');
+      if (value == null) {
+        print('DEBUG: $fieldName is null, using default: $defaultValue');
+        return defaultValue;
+      }
+      if (value is int) {
+        print('DEBUG: $fieldName is int: $value');
+        return value;
+      }
+      if (value is String) {
+        final parsed = int.tryParse(value) ?? defaultValue;
+        print('DEBUG: $fieldName parsed from string: $parsed');
+        return parsed;
+      }
+      if (value is Map && value.containsKey('value')) {
+        print('DEBUG: $fieldName is Map, extracting value: ${value['value']}');
+        return _extractInt(value['value'], defaultValue, fieldName);
+      }
+      print('DEBUG: $fieldName unknown type, using default: $defaultValue');
+      return defaultValue;
+    }
+
+    print('DEBUG: All form values: $values');
+
     return Inspection(
       id: initial?.id ?? 0,
-      vehiculo: values['vehiculo'] as int? ?? 0,
-      cliente: values['cliente'] as int? ?? 0,
-      tieneRalladuras: values['tieneRalladuras'] as bool? ?? false,
-      cantidadCombustible: values['cantidadCombustible'] as CantidadCombustible? ?? CantidadCombustible.unCuarto,
-      tieneGomaRespuesta: values['tieneGomaRespuesta'] as bool? ?? false,
-      tieneGato: values['tieneGato'] as bool? ?? false,
-      tieneRoturasCristal: values['tieneRoturasCristal'] as bool? ?? false,
-      estadoGoma1: values['estadoGoma1'] as bool? ?? false,
-      estadoGoma2: values['estadoGoma2'] as bool? ?? false,
-      estadoGoma3: values['estadoGoma3'] as bool? ?? false,
-      estadoGoma4: values['estadoGoma4'] as bool? ?? false,
-      fecha: values['fecha'] as DateTime? ?? DateTime.now(),
-      empleadoInspeccion: values['empleadoInspeccion'] as int? ?? 0,
-      estado: values['estado'] as bool? ?? true,
+      vehiculo: _extractInt(values['vehiculo'], initial?.vehiculo ?? 0, 'vehiculo'),
+      cliente: _extractInt(values['cliente'], initial?.cliente ?? 0, 'cliente'),
+      tieneRalladuras: (values['tieneRalladuras'] as bool?) ?? initial?.tieneRalladuras ?? false,
+      cantidadCombustible: (values['cantidadCombustible'] as CantidadCombustible?) ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
+      tieneGomaRespuesta: (values['tieneGomaRespuesta'] as bool?) ?? initial?.tieneGomaRespuesta ?? false,
+      tieneGato: (values['tieneGato'] as bool?) ?? initial?.tieneGato ?? false,
+      tieneRoturasCristal: (values['tieneRoturasCristal'] as bool?) ?? initial?.tieneRoturasCristal ?? false,
+      estadoGoma1: (values['estadoGoma1'] as bool?) ?? initial?.estadoGoma1 ?? false,
+      estadoGoma2: (values['estadoGoma2'] as bool?) ?? initial?.estadoGoma2 ?? false,
+      estadoGoma3: (values['estadoGoma3'] as bool?) ?? initial?.estadoGoma3 ?? false,
+      estadoGoma4: (values['estadoGoma4'] as bool?) ?? initial?.estadoGoma4 ?? false,
+      fecha: (values['fecha'] as DateTime?) ?? initial?.fecha ?? DateTime.now(),
+      empleadoInspeccion: _extractInt(values['empleadoInspeccion'], initial?.empleadoInspeccion ?? 0, 'empleadoInspeccion'),
+      estado: (values['estado'] as bool?) ?? initial?.estado ?? true,
     );
   }
 }

@@ -158,7 +158,12 @@ class _RentalScreenState extends State<RentalScreen> {
           })(),
           cantidadDias: values['cantidadDias'] ?? previous?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
           comentario: values['comentario'] ?? previous?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
-          estado: values['estado'] ?? previous?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA),
+          estado: (() {
+            final val = values['estado'];
+            if (val is EstadoRenta) return val;
+            if (val is bool) return val ? EstadoRenta.ACTIVA : EstadoRenta.DEVUELTA;
+            return previous?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA);
+          })(),
         ),
         fields: [
           FormFieldDefinition<RentalForm>(
@@ -174,7 +179,7 @@ class _RentalScreenState extends State<RentalScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.empleadoId ?? employeeProvider.todosEmpleados.first.id,
+            getValue: (v) => v?.empleadoId,
             applyValue: (v, value) => RentalForm(
               noRenta: v?.noRenta ?? initial?.noRenta,
               empleadoId: value as int,
@@ -201,7 +206,7 @@ class _RentalScreenState extends State<RentalScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.vehiculoId ?? vehicleProvider.todosVehiculos.first.id,
+            getValue: (v) => v?.vehiculoId,
             applyValue: (v, value) => RentalForm(
               noRenta: v?.noRenta ?? initial?.noRenta,
               empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
@@ -228,7 +233,7 @@ class _RentalScreenState extends State<RentalScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.clienteId ?? clientProvider.todosClientes.first.id,
+            getValue: (v) => v?.clienteId,
             applyValue: (v, value) => RentalForm(
               noRenta: v?.noRenta ?? initial?.noRenta,
               empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
@@ -246,7 +251,7 @@ class _RentalScreenState extends State<RentalScreen> {
             key: 'fechaRenta',
             label: 'Fecha de Renta',
             fieldType: 'date',
-            getValue: (v) => v?.fechaRenta ?? DateTime.now(),
+            getValue: (v) => v?.fechaRenta,
             validator: (value) {
               if (value == null) return 'La fecha de renta es requerida';
               if (value is DateTime && value.isAfter(DateTime.now())) {
@@ -293,7 +298,7 @@ class _RentalScreenState extends State<RentalScreen> {
               value,
               fieldName: 'Monto por día',
             ),
-            getValue: (v) => v?.montoDia ?? 0.0,
+            getValue: (v) => v?.montoDia,
             applyValue: (v, value) => RentalForm(
               noRenta: v?.noRenta ?? initial?.noRenta,
               empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
@@ -320,7 +325,7 @@ class _RentalScreenState extends State<RentalScreen> {
               value,
               fieldName: 'Cantidad de días',
             ),
-            getValue: (v) => v?.cantidadDias ?? 1,
+            getValue: (v) => v?.cantidadDias,
             inputFormatters: InputFormatters.digitsOnly(),
             applyValue: (v, value) => RentalForm(
               noRenta: v?.noRenta ?? initial?.noRenta,
@@ -338,7 +343,7 @@ class _RentalScreenState extends State<RentalScreen> {
           FormFieldDefinition<RentalForm>(
             key: 'comentario',
             label: 'Comentario',
-            getValue: (v) => v?.comentario ?? '',
+            getValue: (v) => v?.comentario,
             applyValue: (v, value) => RentalForm(
               noRenta: v?.noRenta ?? initial?.noRenta,
               empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
@@ -360,7 +365,7 @@ class _RentalScreenState extends State<RentalScreen> {
               {'value': true, 'label': 'Activo'},
               {'value': false, 'label': 'Inactivo'},
             ],
-            getValue: (v) => v?.estado == EstadoRenta.ACTIVA,
+            getValue: (v) => v?.estado == EstadoRenta.ACTIVA ? true : null,
             applyValue: (v, value) => RentalForm(
               noRenta: v?.noRenta ?? initial?.noRenta,
               empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),

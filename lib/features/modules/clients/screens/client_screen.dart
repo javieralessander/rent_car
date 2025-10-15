@@ -141,7 +141,7 @@ class _ClientScreenState extends State<ClientScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.tipoPersona ?? TipoPersona.FISICA,
+            getValue: (v) => v?.tipoPersona,
             applyValue: (v, value) => Client(
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
@@ -200,7 +200,7 @@ class _ClientScreenState extends State<ClientScreen> {
               fieldName: 'Límite de Crédito',
               minValue: 0.0,
             ),
-            getValue: (v) => v?.limiteCredito ?? 0.0,
+            getValue: (v) => v?.limiteCredito,
             applyValue: (v, value) => Client(
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
@@ -220,7 +220,7 @@ class _ClientScreenState extends State<ClientScreen> {
               {'value': true, 'label': 'Activo'},
               {'value': false, 'label': 'Inactivo'},
             ],
-            getValue: (v) => v?.estado ?? true,
+            getValue: (v) => v?.estado,
             applyValue: (v, value) => Client(
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',

@@ -98,10 +98,10 @@ class _BrandScreenState extends State<BrandScreen> {
                       previous?.descripcion ??
                       initial?.descripcion ??
                       '',
-                  isActive:
+                  estado:
                       values['estado'] ??
-                      previous?.isActive ??
-                      initial?.isActive ??
+                      previous?.estado ??
+                      initial?.estado ??
                       true,
                 ),
             fields: [
@@ -123,7 +123,7 @@ class _BrandScreenState extends State<BrandScreen> {
                     (b, value) => Brand(
                       id: b?.id ?? initial?.id ?? 0,
                       descripcion: value,
-                      isActive: b?.isActive ?? initial?.isActive ?? true,
+                      estado: b?.estado ?? initial?.estado ?? true,
                     ),
               ),
               FormFieldDefinition<Brand>(
@@ -134,12 +134,12 @@ class _BrandScreenState extends State<BrandScreen> {
                   {'value': true, 'label': 'Activo'},
                   {'value': false, 'label': 'Inactivo'},
                 ],
-                getValue: (b) => b?.isActive ?? true,
+                getValue: (b) => b?.estado,
                 applyValue:
                     (b, value) => Brand(
                       id: b?.id ?? initial?.id ?? 0,
                       descripcion: b?.descripcion ?? initial?.descripcion ?? '',
-                      isActive: value as bool,
+                      estado: value as bool,
                     ),
               ),
             ],
@@ -151,7 +151,7 @@ class _BrandScreenState extends State<BrandScreen> {
     BuildContext context,
     Brand brand,
   ) {
-    final isActive = brand.isActive;
+    final isActive = brand.estado;
     final initials =
         brand.descripcion.isNotEmpty ? brand.descripcion[0].toUpperCase() : 'M';
 

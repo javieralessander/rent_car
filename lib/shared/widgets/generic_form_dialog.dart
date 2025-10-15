@@ -39,12 +39,15 @@ class _GenericFormDialogState<T> extends State<GenericFormDialog<T>> {
   void initState() {
     super.initState();
     for (var field in widget.fields) {
-      final value = field.getValue(widget.initialData);
-      // Para campos boolean, solo pre-inicializar si estamos editando (no creando)
-      if (field.fieldType == 'boolean' && widget.initialData == null) {
-        _formValues[field.key] = null; // No pre-inicializar en crear nuevo
+      // Si estamos creando un nuevo registro (initialData == null), no cargar valores por defecto
+      if (widget.initialData == null) {
+        _formValues[field.key] = null; // No pre-inicializar NADA en crear nuevo
+        print('DEBUG: ${field.key} initialized to null (new record)');
       } else {
+        // Solo cargar valores cuando estamos editando
+        final value = field.getValue(widget.initialData);
         _formValues[field.key] = value;
+        print('DEBUG: ${field.key} initialized to $value (editing)');
       }
     }
   }
@@ -249,21 +252,14 @@ class FormFieldDefinition<T> {
           }
         }
 
-        // Ensure initial value exists in the options
-        final validInitialValue = seenValues.contains(value) ? value : (seenValues.isNotEmpty ? seenValues.first : null);
+        // Only use value if it exists in options, otherwise keep it null (no auto-selection)
+        final validInitialValue = seenValues.contains(value) ? value : null;
 
         return DropdownButtonFormField<dynamic>(
           value: validInitialValue,
           decoration: InputDecoration(labelText: label),
           items: dropdownItems,
           onChanged: (newValue) {
-            // If we had to change the initial value due to validation,
-            // make sure to call onChanged with the corrected value
-            if (validInitialValue != value && validInitialValue != null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                onChanged?.call(validInitialValue);
-              });
-            }
             onChanged?.call(newValue);
           },
           validator: (raw) {

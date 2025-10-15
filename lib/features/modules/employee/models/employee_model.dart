@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum TandaLabor { matutina, vespertina, nocturna }
+enum TandaLabor { MATUTINA, VESPERTINA, NOCTURNA }
 
 class Employee {
   final int id;
@@ -34,15 +34,15 @@ class Employee {
   }
 
   static TandaLabor _parseTandaLabor(String tanda) {
-    switch (tanda.toLowerCase()) {
-      case 'matutina':
-        return TandaLabor.matutina;
-      case 'vespertina':
-        return TandaLabor.vespertina;
-      case 'nocturna':
-        return TandaLabor.nocturna;
+    switch (tanda.toUpperCase()) {
+      case 'MATUTINA':
+        return TandaLabor.MATUTINA;
+      case 'VESPERTINA':
+        return TandaLabor.VESPERTINA;
+      case 'NOCTURNA':
+        return TandaLabor.NOCTURNA;
       default:
-        return TandaLabor.matutina;
+        return TandaLabor.MATUTINA;
     }
   }
 
@@ -50,7 +50,7 @@ class Employee {
     return {
       'nombre': nombre,
       'cedula': cedula,
-      'tandaLabor': tandaLabor.name,
+      'tandaLabor': tandaLabor.toString().split('.').last,
       'porcientoComision': porcientoComision,
       'fechaIngreso': fechaIngreso.toIso8601String(),
       'estado': estado,
@@ -64,7 +64,7 @@ class Employee {
 
   @override
   String toString() {
-    return 'Empleado($id - $nombre - ${tandaLabor.name})';
+    return 'Empleado($id - $nombre - ${tandaLabor.toString().split('.').last})';
   }
 
   @override

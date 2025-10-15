@@ -12,6 +12,28 @@ class ClientService {
     );
   }
 
+  static Future<Client?> getById(int id) async {
+    try {
+      return await _client.get<Client>(
+        '/clientes/$id',
+        (e) => Client.fromJson(e as Map<String, dynamic>),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<Client?> getByCedula(String cedula) async {
+    try {
+      return await _client.get<Client>(
+        '/clientes/cedula/$cedula',
+        (e) => Client.fromJson(e as Map<String, dynamic>),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
   static Future<Client> create(Client cliente) async {
     return await _client.post<Client>(
       '/clientes',

@@ -1,21 +1,21 @@
 import 'dart:convert';
 
-enum TipoPersona { fisica, juridica }
+enum TipoPersona { FISICA, JURIDICA }
 
 class Client {
-  final int id;
+  final int? id;
   final String nombre;
   final String cedula;
-  final String numeroTarjetaCR;
+  final String noTarjetaCr;
   final double limiteCredito;
   final TipoPersona tipoPersona;
   final bool estado;
 
   Client({
-    required this.id,
+    this.id,
     required this.nombre,
     required this.cedula,
-    required this.numeroTarjetaCR,
+    required this.noTarjetaCr,
     required this.limiteCredito,
     required this.tipoPersona,
     this.estado = true,
@@ -23,30 +23,31 @@ class Client {
 
   bool puedeRentar(double montoRenta) => estado && limiteCredito >= montoRenta;
 
-  String get tipoPersonaTexto => tipoPersona == TipoPersona.fisica ? 'Física' : 'Jurídica';
+  String get tipoPersonaTexto => tipoPersona == TipoPersona.FISICA ? 'Física' : 'Jurídica';
 
   factory Client.fromJson(Map<String, dynamic> json) {
     return Client(
-      id: int.parse(json['id'].toString()),
+      id: json['id'] != null ? int.parse(json['id'].toString()) : null,
       nombre: json['nombre'],
       cedula: json['cedula'],
-      numeroTarjetaCR: json['numeroTarjetaCR'],
+      noTarjetaCr: json['noTarjetaCr'],
       limiteCredito: double.parse(json['limiteCredito'].toString()),
-      tipoPersona:
-          json['tipoPersona'] == 'fisica'
-              ? TipoPersona.fisica
-              : TipoPersona.juridica,
+      tipoPersona: TipoPersona.values.firstWhere(
+        (e) => e.toString().split('.').last == json['tipoPersona'],
+        orElse: () => TipoPersona.FISICA,
+      ),
       estado: json['estado'] ?? true,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      if (id != null) 'id': id,
       'nombre': nombre,
       'cedula': cedula,
-      'numeroTarjetaCR': numeroTarjetaCR,
+      'noTarjetaCr': noTarjetaCr,
       'limiteCredito': limiteCredito,
-      'tipoPersona': tipoPersona == TipoPersona.fisica ? 'fisica' : 'juridica',
+      'tipoPersona': tipoPersona.toString().split('.').last,
       'estado': estado,
     };
   }

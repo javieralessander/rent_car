@@ -96,12 +96,12 @@ class _ClientScreenState extends State<ClientScreen> {
           id: previous?.id ?? initial?.id ?? 0,
           nombre: values['nombre'] ?? previous?.nombre ?? initial?.nombre ?? '',
           cedula: values['cedula'] ?? previous?.cedula ?? initial?.cedula ?? '',
-          numeroTarjetaCR: values['numeroTarjetaCR'] ??
-              previous?.numeroTarjetaCR ?? initial?.numeroTarjetaCR ?? '',
+          noTarjetaCr: values['noTarjetaCr'] ??
+              previous?.noTarjetaCr ?? initial?.noTarjetaCr ?? '',
           limiteCredito: _parseDouble(values['limiteCredito']) ??
               previous?.limiteCredito ?? initial?.limiteCredito ?? 0.0,
           tipoPersona: values['tipoPersona'] ??
-              previous?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.fisica,
+              previous?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.FISICA,
           estado: values['estado'] ?? previous?.estado ?? initial?.estado ?? true,
         ),
         fields: [
@@ -120,9 +120,9 @@ class _ClientScreenState extends State<ClientScreen> {
               id: v?.id ?? initial?.id ?? 0,
               nombre: value,
               cedula: v?.cedula ?? initial?.cedula ?? '',
-              numeroTarjetaCR: v?.numeroTarjetaCR ?? initial?.numeroTarjetaCR ?? '',
+              noTarjetaCr: v?.noTarjetaCr ?? initial?.noTarjetaCr ?? '',
               limiteCredito: v?.limiteCredito ?? initial?.limiteCredito ?? 0.0,
-              tipoPersona: v?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.fisica,
+              tipoPersona: v?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.FISICA,
               estado: v?.estado ?? initial?.estado ?? true,
             ),
           ),
@@ -132,8 +132,8 @@ class _ClientScreenState extends State<ClientScreen> {
             label: 'Tipo de Persona',
             fieldType: 'dropdown',
             options: const [
-              {'value': TipoPersona.fisica, 'label': 'Física'},
-              {'value': TipoPersona.juridica, 'label': 'Jurídica'},
+              {'value': TipoPersona.FISICA, 'label': 'Física'},
+              {'value': TipoPersona.JURIDICA, 'label': 'Jurídica'},
             ],
             validator: (value) {
               if (value == null) {
@@ -141,12 +141,12 @@ class _ClientScreenState extends State<ClientScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.tipoPersona ?? TipoPersona.fisica,
+            getValue: (v) => v?.tipoPersona ?? TipoPersona.FISICA,
             applyValue: (v, value) => Client(
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
               cedula: v?.cedula ?? initial?.cedula ?? '',
-              numeroTarjetaCR: v?.numeroTarjetaCR ?? initial?.numeroTarjetaCR ?? '',
+              noTarjetaCr: v?.noTarjetaCr ?? initial?.noTarjetaCr ?? '',
               limiteCredito: v?.limiteCredito ?? initial?.limiteCredito ?? 0.0,
               tipoPersona: value as TipoPersona,
               estado: v?.estado ?? initial?.estado ?? true,
@@ -162,9 +162,9 @@ class _ClientScreenState extends State<ClientScreen> {
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
               cedula: value,
-              numeroTarjetaCR: v?.numeroTarjetaCR ?? initial?.numeroTarjetaCR ?? '',
+              noTarjetaCr: v?.noTarjetaCr ?? initial?.noTarjetaCr ?? '',
               limiteCredito: v?.limiteCredito ?? initial?.limiteCredito ?? 0.0,
-              tipoPersona: v?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.fisica,
+              tipoPersona: v?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.FISICA,
               estado: v?.estado ?? initial?.estado ?? true,
             ),
             builder: (context, controller, initialData, formValues) {
@@ -173,17 +173,17 @@ class _ClientScreenState extends State<ClientScreen> {
           ),
           // 4. No. Tarjeta CR (con ícono dinámico)
           FormFieldDefinition<Client>(
-            key: 'numeroTarjetaCR',
+            key: 'noTarjetaCr',
             label: 'No. Tarjeta CR',
             fieldType: 'custom',
-            getValue: (v) => v?.numeroTarjetaCR ?? '',
+            getValue: (v) => v?.noTarjetaCr ?? '',
             applyValue: (v, value) => Client(
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
               cedula: v?.cedula ?? initial?.cedula ?? '',
-              numeroTarjetaCR: value,
+              noTarjetaCr: value,
               limiteCredito: v?.limiteCredito ?? initial?.limiteCredito ?? 0.0,
-              tipoPersona: v?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.fisica,
+              tipoPersona: v?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.FISICA,
               estado: v?.estado ?? initial?.estado ?? true,
             ),
             builder: (context, controller, initialData, formValues) {
@@ -205,9 +205,9 @@ class _ClientScreenState extends State<ClientScreen> {
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
               cedula: v?.cedula ?? initial?.cedula ?? '',
-              numeroTarjetaCR: v?.numeroTarjetaCR ?? initial?.numeroTarjetaCR ?? '',
+              noTarjetaCr: v?.noTarjetaCr ?? initial?.noTarjetaCr ?? '',
               limiteCredito: value as double,
-              tipoPersona: v?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.fisica,
+              tipoPersona: v?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.FISICA,
               estado: v?.estado ?? initial?.estado ?? true,
             ),
           ),
@@ -225,9 +225,9 @@ class _ClientScreenState extends State<ClientScreen> {
               id: v?.id ?? initial?.id ?? 0,
               nombre: v?.nombre ?? initial?.nombre ?? '',
               cedula: v?.cedula ?? initial?.cedula ?? '',
-              numeroTarjetaCR: v?.numeroTarjetaCR ?? initial?.numeroTarjetaCR ?? '',
+              noTarjetaCr: v?.noTarjetaCr ?? initial?.noTarjetaCr ?? '',
               limiteCredito: v?.limiteCredito ?? initial?.limiteCredito ?? 0.0,
-              tipoPersona: v?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.fisica,
+              tipoPersona: v?.tipoPersona ?? initial?.tipoPersona ?? TipoPersona.FISICA,
               estado: value as bool,
             ),
           ),
@@ -242,14 +242,14 @@ class _ClientScreenState extends State<ClientScreen> {
   ) {
     final isActive = cliente.estado;
     final initials = cliente.nombre.isNotEmpty ? cliente.nombre[0].toUpperCase() : 'C';
-    final tipoPersonaText = cliente.tipoPersona == TipoPersona.fisica ? 'Persona Física' : 'Persona Jurídica';
+    final tipoPersonaText = cliente.tipoPersona == TipoPersona.FISICA ? 'Persona Física' : 'Persona Jurídica';
 
     return CollectionItemData(
       header: CollectionHeaderData(
         title: tipoPersonaText,
         subtitle: cliente.cedula,
         backgroundColor: AppColors.primary.withOpacity(0.05),
-        leadingIcon: cliente.tipoPersona == TipoPersona.fisica ? Icons.person : Icons.business,
+        leadingIcon: cliente.tipoPersona == TipoPersona.FISICA ? Icons.person : Icons.business,
       ),
       badge: CollectionBadgeData(text: initials),
       title: cliente.nombre,
@@ -276,7 +276,7 @@ class _ClientScreenState extends State<ClientScreen> {
           label: 'Tipo Persona',
           value: tipoPersonaText,
           inlineValue: tipoPersonaText,
-          icon: cliente.tipoPersona == TipoPersona.fisica ? Icons.person : Icons.business,
+          icon: cliente.tipoPersona == TipoPersona.FISICA ? Icons.person : Icons.business,
         ),
         CollectionDetailInfo(
           label: 'Límite Crédito',
@@ -286,8 +286,8 @@ class _ClientScreenState extends State<ClientScreen> {
         ),
         CollectionDetailInfo(
           label: 'Tarjeta CR',
-          value: cliente.numeroTarjetaCR,
-          inlineValue: 'Tarjeta: ${cliente.numeroTarjetaCR}',
+          value: cliente.noTarjetaCr,
+          inlineValue: 'Tarjeta: ${cliente.noTarjetaCr}',
           icon: Icons.credit_card,
         ),
         CollectionDetailInfo(
@@ -308,7 +308,7 @@ class _ClientScreenState extends State<ClientScreen> {
           label: 'Eliminar',
           icon: Icons.delete_outline,
           variant: CollectionActionVariant.danger,
-          onPressed: () => context.read<ClientProvider>().eliminarCliente(cliente.id),
+          onPressed: () => context.read<ClientProvider>().eliminarCliente(cliente.id!),
         ),
       ],
       footerStatus: CollectionFooterStatus(
@@ -360,9 +360,9 @@ class _ClientScreenState extends State<ClientScreen> {
     // Get current tipo de persona from form values or initial data
     final currentTipoPersona = formValues?['tipoPersona'] as TipoPersona? ??
         initialData?.tipoPersona ??
-        TipoPersona.fisica;
+        TipoPersona.FISICA;
 
-    final isPersonaFisica = currentTipoPersona == TipoPersona.fisica;
+    final isPersonaFisica = currentTipoPersona == TipoPersona.FISICA;
     final fieldLabel = isPersonaFisica ? 'Cédula' : 'RNC';
     final fieldHint = isPersonaFisica ? 'XXX-XXXXXXX-X' : 'XXXXXXXXX';
 

@@ -1,137 +1,154 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/providers/base_collection_provider.dart';
 import '../models/client_model.dart';
 import '../services/client_service.dart';
 
-class ClientProvider extends ChangeNotifier {
-  String? _error;
-  String? get error => _error;
-  ClientProvider() {
-    cargarClientes();
-  }
-  List<Client> _todos = [];
-  List<Client> _pagina = [];
+class ClientProvider extends BaseCollectionProvider<Client> {
 
-  bool _isLoading = false;
-  int _paginaActual = 1;
-  int _registrosPorPagina = 6;
-
-  String _busqueda = '';
-
-  List<Client> get clientes => _pagina;
-  List<Client> get todosClientes => List.unmodifiable(_todos);
-  bool get isLoading => _isLoading;
-  int get paginaActual => _paginaActual;
-  int get registrosPorPagina => _registrosPorPagina;
-
-  List<Client> get _filtrados {
-    if (_busqueda.isEmpty) return _todos;
-    return _todos
-        .where(
-          (c) =>
-              c.nombre.toLowerCase().contains(_busqueda) ||
-              c.cedula.toLowerCase().contains(_busqueda) ||
-              c.estado.toString().toLowerCase().contains(_busqueda),
-        )
-        .toList();
+  // Métodos requeridos por BaseCollectionProvider
+  @override
+  Future<List<Client>> fetchAll() async {
+    return await ClientService.getAll();
   }
 
-  int get totalRegistros => _filtrados.length;
-  int get totalPaginas => (totalRegistros / _registrosPorPagina).ceil();
-  int get inicio => (_paginaActual - 1) * _registrosPorPagina;
-  int get fin => (_paginaActual * _registrosPorPagina).clamp(0, totalRegistros);
-
-  set busqueda(String value) {
-    _busqueda = value.toLowerCase();
-    _paginaActual = 1;
-    _actualizarPagina();
+  @override
+  Future<Client> create(Client item) async {
+    return await ClientService.create(item);
   }
 
-  Future<void> cargarClientes() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+  @override
+  Future<Client> update(Client item) async {
+    return await ClientService.update(item);
+  }
 
+  @override
+  Future<void> delete(dynamic id) async {
+    await ClientService.delete(id);
+  }
+
+  @override
+  bool matchesSearch(Client item, String searchTerm) {
+    return item.nombre.toLowerCase().contains(searchTerm) ||
+           item.cedula.toLowerCase().contains(searchTerm) ||
+           item.noTarjetaCr.toLowerCase().contains(searchTerm) ||
+           item.tipoPersonaTexto.toLowerCase().contains(searchTerm) ||
+           item.estado.toString().toLowerCase().contains(searchTerm);
+  }
+
+  @override
+  dynamic getId(Client item) => item.id;
+
+  // Métodos para compatibilidad con código existente
+  List<Client> get clientes => items;
+  List<Client> get todosClientes => allItems;
+
+  set busqueda(String value) => setSearch(value);
+
+  Future<void> cargarClientes() async => await initialize();
+
+  void cambiarPagina(int nuevaPagina) => changePage(nuevaPagina);
+
+  void cambiarRegistrosPorPagina(int cantidad) => changeItemsPerPage(cantidad);
+
+  Future<void> agregarCliente(Client cliente) async => await addItem(cliente);
+
+  Future<void> actualizarCliente(Client cliente) async => await updateItem(cliente);
+
+  Future<void> eliminarCliente(int id) async => await removeItem(id);
+
+  // Métodos específicos para clientes
+
+  /// Busca cliente por cédula
+  Client? findByCedula(String cedula) {
     try {
-      final data = await ClientService.getAll();
-      debugPrint('Clientes recibidos: \n$data');
-      _todos = data;
-      if (_todos.isEmpty) {
-        _error = 'No se encontraron clientes.';
-      }
-      _actualizarPagina();
+      return allItems.firstWhere((c) => c.cedula == cedula);
     } catch (e) {
-      debugPrint('Error al cargar clientes: $e');
-      _todos = [];
-      _pagina = [];
-      _error = 'Error al cargar clientes: $e';
-    }
-
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  void _actualizarPagina() {
-    final filtrados = _filtrados;
-    if (filtrados.isEmpty) {
-      if (_pagina.isNotEmpty || _paginaActual != 1) {
-        _paginaActual = 1;
-        _pagina = [];
-        notifyListeners();
-      }
-      return;
-    }
-    if (_paginaActual > totalPaginas) {
-      _paginaActual = 1;
-    }
-    final start = inicio;
-    final end = fin > filtrados.length ? filtrados.length : fin;
-    _pagina = filtrados.sublist(start, end);
-    notifyListeners();
-  }
-
-  void cambiarPagina(int nuevaPagina) {
-    if (nuevaPagina >= 1 && nuevaPagina <= totalPaginas) {
-      _paginaActual = nuevaPagina;
-      _actualizarPagina();
+      return null;
     }
   }
 
-  void cambiarRegistrosPorPagina(int cantidad) {
-    _registrosPorPagina = cantidad;
-    _paginaActual = 1;
-    _actualizarPagina();
-  }
-
-  Future<void> agregarCliente(Client cliente) async {
+  /// Busca cliente por número de tarjeta
+  Client? findByTarjeta(String noTarjeta) {
     try {
-      final nuevo = await ClientService.create(cliente);
-      _todos.add(nuevo);
-      _actualizarPagina();
+      return allItems.firstWhere((c) =>
+        c.noTarjetaCr.toLowerCase() == noTarjeta.toLowerCase()
+      );
     } catch (e) {
-      debugPrint('Error al agregar cliente: $e');
+      return null;
     }
   }
 
-  Future<void> actualizarCliente(Client cliente) async {
-    try {
-      final actualizado = await ClientService.update(cliente);
-      final index = _todos.indexWhere((c) => c.id == actualizado.id);
-      if (index != -1) {
-        _todos[index] = actualizado;
-        _actualizarPagina();
-      }
-    } catch (e) {
-      debugPrint('Error al actualizar cliente: $e');
+  /// Filtra clientes por estado
+  void filterByStatus(bool? activo) {
+    if (activo == null) {
+      clearCustomFilter();
+    } else {
+      applyCustomFilter((client) => client.estado == activo);
     }
   }
 
-  Future<void> eliminarCliente(int id) async {
-    try {
-      await ClientService.delete(id);
-      _todos.removeWhere((c) => c.id == id);
-      _actualizarPagina();
-    } catch (e) {
-      debugPrint('Error al eliminar cliente: $e');
+  /// Filtra clientes por tipo de persona
+  void filterByPersonType(TipoPersona? tipoPersona) {
+    if (tipoPersona == null) {
+      clearCustomFilter();
+    } else {
+      applyCustomFilter((client) => client.tipoPersona == tipoPersona);
     }
+  }
+
+  /// Limpia filtros personalizados
+  void clearCustomFilter() {
+    resetPagination();
+  }
+
+  /// Valida si una cédula ya existe
+  bool isCedulaExists(String cedula, {int? excludeId}) {
+    return allItems.any((c) =>
+      c.cedula == cedula && (excludeId == null || c.id != excludeId)
+    );
+  }
+
+  /// Valida si una tarjeta ya existe
+  bool isTarjetaExists(String noTarjeta, {int? excludeId}) {
+    return allItems.any((c) =>
+      c.noTarjetaCr.toLowerCase() == noTarjeta.toLowerCase() &&
+      (excludeId == null || c.id != excludeId)
+    );
+  }
+
+  /// Obtiene estadísticas de clientes
+  Map<String, int> getClientStats() {
+    final activos = allItems.where((c) => c.estado).length;
+    final inactivos = allItems.length - activos;
+    final fisicas = allItems.where((c) => c.tipoPersona == TipoPersona.FISICA).length;
+    final juridicas = allItems.where((c) => c.tipoPersona == TipoPersona.JURIDICA).length;
+
+    return {
+      'total': allItems.length,
+      'activos': activos,
+      'inactivos': inactivos,
+      'fisicas': fisicas,
+      'juridicas': juridicas,
+    };
+  }
+
+  /// Obtiene clientes agrupados por tipo de persona
+  Map<String, List<Client>> getClientsByPersonType() {
+    final grouped = <String, List<Client>>{};
+
+    for (final client in allItems) {
+      final tipo = client.tipoPersonaTexto;
+      grouped.putIfAbsent(tipo, () => []).add(client);
+    }
+
+    return grouped;
+  }
+
+  /// Obtiene clientes recientes (últimos agregados)
+  List<Client> getRecentClients({int limit = 5}) {
+    final sorted = List<Client>.from(allItems);
+    sorted.sort((a, b) => (b.id ?? 0).compareTo(a.id ?? 0));
+    return sorted.take(limit).toList();
   }
 }

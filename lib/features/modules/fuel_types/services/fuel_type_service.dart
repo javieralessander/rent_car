@@ -7,14 +7,14 @@ class FuelTypeService {
 
   static Future<List<FuelType>> getAll() async {
     return await _client.getList<FuelType>(
-      '/tipos-combustible',
+      '/tipos-combustibles',
       (e) => FuelType.fromJson(e as Map<String, dynamic>),
     );
   }
 
   static Future<FuelType> create(FuelType tipoCombustible) async {
     return await _client.post<FuelType>(
-      '/tipos-combustible',
+      '/tipos-combustibles',
       tipoCombustible.toJson(),
       (e) => FuelType.fromJson(e as Map<String, dynamic>),
     );

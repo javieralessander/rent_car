@@ -9,6 +9,7 @@ import '../../../../shared/widgets/generic_form_dialog.dart';
 import '../../../../shared/utils/input_validators.dart';
 import '../../brand/providers/brand_provider.dart';
 import '../models/model_model.dart';
+import '../models/model_form.dart';
 import '../providers/model_provider.dart';
 
 class ModelScreen extends StatefulWidget {
@@ -54,7 +55,7 @@ class _ModelScreenState extends State<ModelScreen> {
               (model) => _buildModelItem(
                 context,
                 model,
-                brandMap[model.idMarca] ?? 'Sin marca',
+                model.marca?.descripcion ?? 'Sin marca',
               ),
             )
             .toList(),
@@ -93,13 +94,21 @@ class _ModelScreenState extends State<ModelScreen> {
     }
     showDialog(
       context: context,
-      builder: (_) => GenericFormDialog<VehicleModel>(
+      builder: (_) => GenericFormDialog<ModelForm>(
         title: 'Agregar modelo',
-        onSubmit: (data) async => provider.agregarModelo(data),
-        fromValues: (values, initial) => VehicleModel(
+        onSubmit: (modelForm) async {
+          // Convertir ModelForm a Model completo
+          final brand = brandProvider.todasMarcas.firstWhere(
+            (b) => b.id == modelForm.marcaId,
+            orElse: () => brandProvider.todasMarcas.first,
+          );
+          final model = modelForm.toModel(brand: brand);
+          await provider.agregarModelo(model);
+        },
+        fromValues: (values, initial) => ModelForm(
           id: 0,
           descripcion: values['descripcion'] ?? '',
-          idMarca: values['idMarca'] ?? brandProvider.todasMarcas.first.id,
+          marcaId: values['marcaId'] ?? brandProvider.todasMarcas.first.id!,
           estado: values['estado'] ?? true,
         ),
         fields: _modelFormFields(brandProvider),
@@ -109,7 +118,7 @@ class _ModelScreenState extends State<ModelScreen> {
 
   void _showEditDialog(
     BuildContext context,
-    VehicleModel model,
+    Model model,
     ModelProvider provider,
     BrandProvider brandProvider,
   ) {
@@ -123,14 +132,22 @@ class _ModelScreenState extends State<ModelScreen> {
     }
     showDialog(
       context: context,
-      builder: (_) => GenericFormDialog<VehicleModel>(
+      builder: (_) => GenericFormDialog<ModelForm>(
         title: 'Editar modelo',
-        initialData: model,
-        onSubmit: (data) async => provider.actualizarModelo(data),
-        fromValues: (values, initial) => VehicleModel(
+        initialData: ModelForm.fromModel(model),
+        onSubmit: (modelForm) async {
+          // Convertir ModelForm a Model completo
+          final brand = brandProvider.todasMarcas.firstWhere(
+            (b) => b.id == modelForm.marcaId,
+            orElse: () => brandProvider.todasMarcas.first,
+          );
+          final updatedModel = modelForm.toModel(brand: brand);
+          await provider.actualizarModelo(updatedModel);
+        },
+        fromValues: (values, initial) => ModelForm(
           id: initial?.id ?? model.id,
           descripcion: values['descripcion'] ?? initial?.descripcion ?? model.descripcion,
-          idMarca: values['idMarca'] ?? initial?.idMarca ?? model.idMarca,
+          marcaId: values['marcaId'] ?? initial?.marcaId ?? model.marca?.id ?? brandProvider.todasMarcas.first.id!,
           estado: values['estado'] ?? initial?.estado ?? model.estado,
         ),
         fields: _modelFormFields(brandProvider),
@@ -140,7 +157,7 @@ class _ModelScreenState extends State<ModelScreen> {
 
   void _showDeleteDialog(
     BuildContext context,
-    VehicleModel model,
+    Model model,
     ModelProvider provider,
   ) {
     showDialog(
@@ -161,7 +178,7 @@ class _ModelScreenState extends State<ModelScreen> {
                   backgroundColor: AppColors.danger,
                 ),
                 onPressed: () async {
-                  await provider.eliminarModelo(model.id);
+                  await provider.eliminarModelo(model.id!);
                   if (context.mounted) Navigator.pop(context);
                 },
                 child: const Text('Eliminar'),
@@ -171,11 +188,11 @@ class _ModelScreenState extends State<ModelScreen> {
     );
   }
 
-  List<FormFieldDefinition<VehicleModel>> _modelFormFields(
+  List<FormFieldDefinition<ModelForm>> _modelFormFields(
     BrandProvider brandProvider,
   ) {
     return [
-      FormFieldDefinition<VehicleModel>(
+      FormFieldDefinition<ModelForm>(
         key: 'descripcion',
         label: 'Descripción',
         textValidator:
@@ -188,15 +205,15 @@ class _ModelScreenState extends State<ModelScreen> {
         textCapitalization: TextCapitalization.words,
         getValue: (v) => v?.descripcion ?? '',
         applyValue:
-            (v, value) => VehicleModel(
+            (v, value) => ModelForm(
               id: v?.id ?? 0,
               descripcion: value,
-              idMarca: v?.idMarca ?? brandProvider.todasMarcas.first.id,
+              marcaId: v?.marcaId ?? brandProvider.todasMarcas.first.id!,
               estado: v?.estado ?? true,
             ),
       ),
-      FormFieldDefinition<VehicleModel>(
-        key: 'idMarca',
+      FormFieldDefinition<ModelForm>(
+        key: 'marcaId',
         label: 'Marca',
         fieldType: 'dropdown',
         options:
@@ -209,17 +226,16 @@ class _ModelScreenState extends State<ModelScreen> {
           }
           return null;
         },
-        getValue: (v) => v?.idMarca ?? brandProvider.todasMarcas.first.id,
+        getValue: (v) => v?.marcaId ?? brandProvider.todasMarcas.first.id,
         applyValue:
-            (v, value) => VehicleModel(
+            (v, value) => ModelForm(
               id: v?.id ?? 0,
-              descripcion:
-                  v?.descripcion ?? brandProvider.todasMarcas.first.descripcion,
-              idMarca: value as int,
+              descripcion: v?.descripcion ?? '',
+              marcaId: value as int,
               estado: v?.estado ?? true,
             ),
       ),
-      FormFieldDefinition<VehicleModel>(
+      FormFieldDefinition<ModelForm>(
         key: 'estado',
         label: 'Estado',
         fieldType: 'dropdown',
@@ -229,10 +245,10 @@ class _ModelScreenState extends State<ModelScreen> {
         ],
         getValue: (v) => v?.estado ?? true,
         applyValue:
-            (v, value) => VehicleModel(
+            (v, value) => ModelForm(
               id: v?.id ?? 0,
               descripcion: v?.descripcion ?? '',
-              idMarca: v?.idMarca ?? brandProvider.todasMarcas.first.id,
+              marcaId: v?.marcaId ?? brandProvider.todasMarcas.first.id!,
               estado: value as bool,
             ),
       ),
@@ -241,7 +257,7 @@ class _ModelScreenState extends State<ModelScreen> {
 
   CollectionItemData _buildModelItem(
     BuildContext context,
-    VehicleModel model,
+    Model model,
     String brandName,
   ) {
     final modelProvider = context.read<ModelProvider>();

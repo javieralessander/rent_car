@@ -12,6 +12,28 @@ class EmployeeService {
     );
   }
 
+  static Future<Employee?> getById(int id) async {
+    try {
+      return await _client.get<Employee>(
+        '/empleados/$id',
+        (e) => Employee.fromJson(e as Map<String, dynamic>),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<Employee?> getByCedula(String cedula) async {
+    try {
+      return await _client.get<Employee>(
+        '/empleados/cedula/$cedula',
+        (e) => Employee.fromJson(e as Map<String, dynamic>),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
   static Future<Employee> create(Employee empleado) async {
     return await _client.post<Employee>(
       '/empleados',

@@ -1,12 +1,9 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
 import '../../../../core/providers/base_collection_provider.dart';
 import '../models/model_model.dart';
 import '../services/model_service.dart';
 
-class ModelProvider extends BaseCollectionProvider<Model> {
-
-  // Métodos requeridos por BaseCollectionProvider
+/// Provider mejorado para modelos usando el provider base
+class ModelProviderImproved extends BaseCollectionProvider<Model> {
   @override
   Future<List<Model>> fetchAll() async {
     return await ModelService.getAll();
@@ -36,24 +33,6 @@ class ModelProvider extends BaseCollectionProvider<Model> {
 
   @override
   dynamic getId(Model item) => item.id;
-
-  // Métodos para compatibilidad con código existente
-  List<Model> get modelos => items;
-  List<Model> get todosModelos => allItems;
-
-  set busqueda(String value) => setSearch(value);
-
-  Future<void> cargarModelos() async => await initialize();
-
-  void cambiarPagina(int nuevaPagina) => changePage(nuevaPagina);
-
-  void cambiarRegistrosPorPagina(int cantidad) => changeItemsPerPage(cantidad);
-
-  Future<void> agregarModelo(Model modelo) async => await addItem(modelo);
-
-  Future<void> actualizarModelo(Model modelo) async => await updateItem(modelo);
-
-  Future<void> eliminarModelo(int id) async => await removeItem(id);
 
   // Métodos específicos para modelos
 

@@ -55,9 +55,7 @@ class FuelTypeProvider extends ChangeNotifier {
       final data = await FuelTypeService.getAll();
       debugPrint('Tipos de combustible recibidos: \\n$data');
       _todos = data;
-      if (_todos.isEmpty) {
-        _error = 'No se encontraron tipos de combustible.';
-      }
+      // Lista vacía es un estado válido, no un error
       _actualizarPagina();
     } catch (e) {
       debugPrint('Error al cargar tipos de combustible: $e');

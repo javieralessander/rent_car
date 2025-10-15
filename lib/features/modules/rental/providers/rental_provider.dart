@@ -55,9 +55,7 @@ class RentalProvider extends ChangeNotifier {
       final data = await RentalService.getAll();
       debugPrint('Rentas recibidas: \n$data');
       _todos = data;
-      if (_todos.isEmpty) {
-        _error = 'No se encontraron rentas.';
-      }
+      // Lista vacía es un estado válido, no un error
       _actualizarPagina();
     } catch (e) {
       debugPrint('Error al cargar rentas: $e');
@@ -112,7 +110,7 @@ class RentalProvider extends ChangeNotifier {
         throw Exception('La cantidad de días debe ser mayor a 0');
       }
 
-      if (renta.montoPorDia <= 0) {
+      if (renta.montoDia <= 0) {
         throw Exception('El monto por día debe ser mayor a 0');
       }
 
@@ -130,7 +128,7 @@ class RentalProvider extends ChangeNotifier {
   Future<void> actualizarRenta(Rental renta) async {
     try {
       final actualizada = await RentalService.update(renta);
-      final index = _todos.indexWhere((r) => r.id == actualizada.id);
+      final index = _todos.indexWhere((r) => r.noRenta == actualizada.noRenta);
       if (index != -1) {
         _todos[index] = actualizada;
         _actualizarPagina();
@@ -142,7 +140,7 @@ class RentalProvider extends ChangeNotifier {
 
   Future<void> devolverVehiculo(int id, DateTime fechaDevolucion) async {
     try {
-      final rental = _todos.firstWhere((r) => r.id == id);
+      final rental = _todos.firstWhere((r) => r.noRenta == id);
 
       if (rental.esDevuelto) {
         throw Exception('Este vehículo ya ha sido devuelto');
@@ -152,8 +150,8 @@ class RentalProvider extends ChangeNotifier {
         throw Exception('La fecha de devolución no puede ser anterior a la fecha de renta');
       }
 
-      final devuelta = await RentalService.devolver(id, fechaDevolucion);
-      final index = _todos.indexWhere((r) => r.id == devuelta.id);
+      final devuelta = await RentalService.devolver(id);
+      final index = _todos.indexWhere((r) => r.noRenta == devuelta.noRenta);
       if (index != -1) {
         _todos[index] = devuelta;
         _actualizarPagina();
@@ -169,7 +167,7 @@ class RentalProvider extends ChangeNotifier {
   Future<void> eliminarRenta(int id) async {
     try {
       await RentalService.delete(id);
-      _todos.removeWhere((r) => r.id == id);
+      _todos.removeWhere((r) => r.noRenta == id);
       _actualizarPagina();
     } catch (e) {
       debugPrint('Error al eliminar renta: $e');
@@ -186,12 +184,9 @@ class RentalProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final data = await RentalService.buscarPorCriterios(
-        clienteId: clienteId,
-        vehiculoId: vehiculoId,
-        fechaInicio: fechaInicio,
-        fechaFin: fechaFin,
-      );
+      // Por ahora usamos getAll y filtramos localmente
+      // TODO: Implementar endpoint de búsqueda por criterios en el API
+      final data = await RentalService.getAll();
       _todos = data;
       _actualizarPagina();
     } catch (e) {

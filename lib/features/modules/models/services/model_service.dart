@@ -5,18 +5,29 @@ import '../models/model_model.dart';
 class ModelService {
   static final HttpApiClient _client = HttpApiClient(Environment.apiUrl);
 
-  static Future<List<VehicleModel>> getAll() async {
-    return await _client.getList<VehicleModel>(
+  static Future<List<Model>> getAll() async {
+    return await _client.getList<Model>(
       '/modelos',
-      (e) => VehicleModel.fromJson(e as Map<String, dynamic>),
+      (e) => Model.fromJson(e as Map<String, dynamic>),
     );
   }
 
-  static Future<VehicleModel> create(VehicleModel modelo) async {
-    return await _client.post<VehicleModel>(
+  static Future<Model?> getById(int id) async {
+    try {
+      return await _client.get<Model>(
+        '/modelos/$id',
+        (e) => Model.fromJson(e as Map<String, dynamic>),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<Model> create(Model modelo) async {
+    return await _client.post<Model>(
       '/modelos',
       modelo.toJson(),
-      (e) => VehicleModel.fromJson(e as Map<String, dynamic>),
+      (e) => Model.fromJson(e as Map<String, dynamic>),
     );
   }
 
@@ -24,11 +35,11 @@ class ModelService {
     await _client.delete('/modelos/$id');
   }
 
-  static Future<VehicleModel> update(VehicleModel modelo) async {
-    return await _client.put<VehicleModel>(
+  static Future<Model> update(Model modelo) async {
+    return await _client.put<Model>(
       '/modelos/${modelo.id}',
       modelo.toJson(),
-      (e) => VehicleModel.fromJson(e as Map<String, dynamic>),
+      (e) => Model.fromJson(e as Map<String, dynamic>),
     );
   }
 }

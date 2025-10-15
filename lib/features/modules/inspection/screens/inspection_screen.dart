@@ -4,7 +4,6 @@ import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
 import '../../../../shared/widgets/generic_form_dialog.dart';
-import '../../../../shared/utils/input_validators.dart';
 import '../../vehicles/providers/vehicle_provider.dart';
 import '../../clients/providers/client_provider.dart';
 import '../../employee/providers/employee_provider.dart';
@@ -36,8 +35,25 @@ class _InspectionScreenState extends State<InspectionScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<InspectionProvider>();
+    final vehicleProvider = context.watch<VehicleProvider>();
+    final clientProvider = context.watch<ClientProvider>();
+    final employeeProvider = context.watch<EmployeeProvider>();
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 800;
+
+    // Crear mapas para obtener nombres en lugar de IDs
+    final vehicleMap = {
+      for (final vehicle in vehicleProvider.todosVehiculos)
+        vehicle.id: '${vehicle.noPlaca} - ${vehicle.descripcion}',
+    };
+    final clientMap = {
+      for (final client in clientProvider.todosClientes)
+        client.id: '${client.cedula} - ${client.nombre}',
+    };
+    final employeeMap = {
+      for (final employee in employeeProvider.todosEmpleados)
+        employee.id: '${employee.cedula} - ${employee.nombre}',
+    };
 
     return Scaffold(
       drawer: isMobile ? const CustomDrawer() : null,
@@ -46,7 +62,13 @@ class _InspectionScreenState extends State<InspectionScreen> {
         title: 'Gestión de Inspecciones',
         isLoading: provider.isLoading,
         items: provider.inspecciones
-            .map((inspeccion) => _buildInspectionItem(context, inspeccion))
+            .map((inspeccion) => _buildInspectionItem(
+                context,
+                inspeccion,
+                vehicleMap[inspeccion.vehiculo] ?? 'Vehículo ${inspeccion.vehiculo}',
+                clientMap[inspeccion.cliente] ?? 'Cliente ${inspeccion.cliente}',
+                employeeMap[inspeccion.empleadoInspeccion] ?? 'Empleado ${inspeccion.empleadoInspeccion}',
+              ))
             .toList(),
         viewMode: _viewMode,
         onViewModeChanged: (mode) => setState(() => _viewMode = mode),
@@ -94,47 +116,50 @@ class _InspectionScreenState extends State<InspectionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Verifique que existan vehículos, clientes y empleados antes de continuar.'),
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
     }
 
+    final isEditing = initial != null;
+
     await showDialog(
       context: context,
       builder: (_) => GenericFormDialog<Inspection>(
-        title: initial == null ? 'Nueva Inspección' : 'Editar Inspección',
+        title: isEditing ? 'Editar Inspección' : 'Nueva Inspección',
         initialData: initial,
-        onSubmit: (data) async {
-          if (initial == null) {
-            await context.read<InspectionProvider>().agregarInspeccion(data);
+        onSubmit: (inspection) async {
+          if (isEditing) {
+            await context.read<InspectionProvider>().actualizarInspeccion(inspection);
           } else {
-            await context.read<InspectionProvider>().actualizarInspeccion(data);
+            await context.read<InspectionProvider>().agregarInspeccion(inspection);
+          }
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(isEditing
+                    ? 'Inspección actualizada exitosamente'
+                    : 'Inspección creada exitosamente'),
+                backgroundColor: AppColors.success,
+              ),
+            );
           }
         },
-        fromValues: (values, previous) => Inspection(
-          id: previous?.id ?? initial?.id ?? 0,
-          vehiculo: values['vehiculo'] ?? previous?.vehiculo ?? initial?.vehiculo ?? vehicleProvider.todosVehiculos.first.id,
-          cliente: values['cliente'] ?? previous?.cliente ?? initial?.cliente ?? clientProvider.todosClientes.first.id,
-          tieneRalladuras: values['tieneRalladuras'] ?? previous?.tieneRalladuras ?? initial?.tieneRalladuras ?? false,
-          cantidadCombustible: values['cantidadCombustible'] ?? previous?.cantidadCombustible ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
-          tieneGomaRespuesta: values['tieneGomaRespuesta'] ?? previous?.tieneGomaRespuesta ?? initial?.tieneGomaRespuesta ?? false,
-          tieneGato: values['tieneGato'] ?? previous?.tieneGato ?? initial?.tieneGato ?? false,
-          tieneRoturasCristal: values['tieneRoturasCristal'] ?? previous?.tieneRoturasCristal ?? initial?.tieneRoturasCristal ?? false,
-          estadoGoma1: values['estadoGoma1'] ?? previous?.estadoGoma1 ?? initial?.estadoGoma1 ?? false,
-          estadoGoma2: values['estadoGoma2'] ?? previous?.estadoGoma2 ?? initial?.estadoGoma2 ?? false,
-          estadoGoma3: values['estadoGoma3'] ?? previous?.estadoGoma3 ?? initial?.estadoGoma3 ?? false,
-          estadoGoma4: values['estadoGoma4'] ?? previous?.estadoGoma4 ?? initial?.estadoGoma4 ?? false,
-          fecha: values['fecha'] ?? previous?.fecha ?? initial?.fecha ?? DateTime.now(),
-          empleadoInspeccion: values['empleadoInspeccion'] ?? previous?.empleadoInspeccion ?? initial?.empleadoInspeccion ?? employeeProvider.todosEmpleados.first.id,
-          estado: values['estado'] ?? previous?.estado ?? initial?.estado ?? true,
-        ),
+        fromValues: _mapToInspection,
         fields: [
           FormFieldDefinition<Inspection>(
             key: 'vehiculo',
             label: 'Vehículo',
             fieldType: 'dropdown',
+            getValue: (inspection) => inspection?.vehiculo,
+            applyValue: (inspection, value) => inspection,
             options: vehicleProvider.todosVehiculos
-                .map((vehicle) => {'value': vehicle.id, 'label': '${vehicle.numeroPlaca} - ${vehicle.descripcion}'})
+                .map((vehicle) => {
+                      'value': vehicle.id,
+                      'label': '${vehicle.noPlaca} - ${vehicle.descripcion}',
+                    })
                 .toList(),
             validator: (value) {
               if (value == null) {
@@ -142,31 +167,18 @@ class _InspectionScreenState extends State<InspectionScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.vehiculo ?? vehicleProvider.todosVehiculos.first.id,
-            applyValue: (v, value) => Inspection(
-              id: v?.id ?? initial?.id ?? 0,
-              vehiculo: value as int,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              tieneRalladuras: v?.tieneRalladuras ?? initial?.tieneRalladuras ?? false,
-              cantidadCombustible: v?.cantidadCombustible ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
-              tieneGomaRespuesta: v?.tieneGomaRespuesta ?? initial?.tieneGomaRespuesta ?? false,
-              tieneGato: v?.tieneGato ?? initial?.tieneGato ?? false,
-              tieneRoturasCristal: v?.tieneRoturasCristal ?? initial?.tieneRoturasCristal ?? false,
-              estadoGoma1: v?.estadoGoma1 ?? initial?.estadoGoma1 ?? false,
-              estadoGoma2: v?.estadoGoma2 ?? initial?.estadoGoma2 ?? false,
-              estadoGoma3: v?.estadoGoma3 ?? initial?.estadoGoma3 ?? false,
-              estadoGoma4: v?.estadoGoma4 ?? initial?.estadoGoma4 ?? false,
-              fecha: v?.fecha ?? initial?.fecha ?? DateTime.now(),
-              empleadoInspeccion: v?.empleadoInspeccion ?? initial?.empleadoInspeccion ?? 0,
-              estado: v?.estado ?? initial?.estado ?? true,
-            ),
           ),
           FormFieldDefinition<Inspection>(
             key: 'cliente',
             label: 'Cliente',
             fieldType: 'dropdown',
+            getValue: (inspection) => inspection?.cliente,
+            applyValue: (inspection, value) => inspection,
             options: clientProvider.todosClientes
-                .map((client) => {'value': client.id, 'label': '${client.cedula} - ${client.nombre}'})
+                .map((client) => {
+                      'value': client.id,
+                      'label': '${client.cedula} - ${client.nombre}',
+                    })
                 .toList(),
             validator: (value) {
               if (value == null) {
@@ -174,31 +186,18 @@ class _InspectionScreenState extends State<InspectionScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.cliente ?? clientProvider.todosClientes.first.id,
-            applyValue: (v, value) => Inspection(
-              id: v?.id ?? initial?.id ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: value as int,
-              tieneRalladuras: v?.tieneRalladuras ?? initial?.tieneRalladuras ?? false,
-              cantidadCombustible: v?.cantidadCombustible ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
-              tieneGomaRespuesta: v?.tieneGomaRespuesta ?? initial?.tieneGomaRespuesta ?? false,
-              tieneGato: v?.tieneGato ?? initial?.tieneGato ?? false,
-              tieneRoturasCristal: v?.tieneRoturasCristal ?? initial?.tieneRoturasCristal ?? false,
-              estadoGoma1: v?.estadoGoma1 ?? initial?.estadoGoma1 ?? false,
-              estadoGoma2: v?.estadoGoma2 ?? initial?.estadoGoma2 ?? false,
-              estadoGoma3: v?.estadoGoma3 ?? initial?.estadoGoma3 ?? false,
-              estadoGoma4: v?.estadoGoma4 ?? initial?.estadoGoma4 ?? false,
-              fecha: v?.fecha ?? initial?.fecha ?? DateTime.now(),
-              empleadoInspeccion: v?.empleadoInspeccion ?? initial?.empleadoInspeccion ?? 0,
-              estado: v?.estado ?? initial?.estado ?? true,
-            ),
           ),
           FormFieldDefinition<Inspection>(
             key: 'empleadoInspeccion',
             label: 'Empleado Inspector',
             fieldType: 'dropdown',
+            getValue: (inspection) => inspection?.empleadoInspeccion,
+            applyValue: (inspection, value) => inspection,
             options: employeeProvider.todosEmpleados
-                .map((employee) => {'value': employee.id, 'label': '${employee.cedula} - ${employee.nombre}'})
+                .map((employee) => {
+                      'value': employee.id,
+                      'label': '${employee.cedula} - ${employee.nombre}',
+                    })
                 .toList(),
             validator: (value) {
               if (value == null) {
@@ -206,168 +205,157 @@ class _InspectionScreenState extends State<InspectionScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.empleadoInspeccion ?? employeeProvider.todosEmpleados.first.id,
-            applyValue: (v, value) => Inspection(
-              id: v?.id ?? initial?.id ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              tieneRalladuras: v?.tieneRalladuras ?? initial?.tieneRalladuras ?? false,
-              cantidadCombustible: v?.cantidadCombustible ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
-              tieneGomaRespuesta: v?.tieneGomaRespuesta ?? initial?.tieneGomaRespuesta ?? false,
-              tieneGato: v?.tieneGato ?? initial?.tieneGato ?? false,
-              tieneRoturasCristal: v?.tieneRoturasCristal ?? initial?.tieneRoturasCristal ?? false,
-              estadoGoma1: v?.estadoGoma1 ?? initial?.estadoGoma1 ?? false,
-              estadoGoma2: v?.estadoGoma2 ?? initial?.estadoGoma2 ?? false,
-              estadoGoma3: v?.estadoGoma3 ?? initial?.estadoGoma3 ?? false,
-              estadoGoma4: v?.estadoGoma4 ?? initial?.estadoGoma4 ?? false,
-              fecha: v?.fecha ?? initial?.fecha ?? DateTime.now(),
-              empleadoInspeccion: value as int,
-              estado: v?.estado ?? initial?.estado ?? true,
-            ),
           ),
           FormFieldDefinition<Inspection>(
             key: 'fecha',
             label: 'Fecha de Inspección',
             fieldType: 'date',
-            getValue: (v) => v?.fecha ?? DateTime.now(),
-            applyValue: (v, value) => Inspection(
-              id: v?.id ?? initial?.id ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              tieneRalladuras: v?.tieneRalladuras ?? initial?.tieneRalladuras ?? false,
-              cantidadCombustible: v?.cantidadCombustible ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
-              tieneGomaRespuesta: v?.tieneGomaRespuesta ?? initial?.tieneGomaRespuesta ?? false,
-              tieneGato: v?.tieneGato ?? initial?.tieneGato ?? false,
-              tieneRoturasCristal: v?.tieneRoturasCristal ?? initial?.tieneRoturasCristal ?? false,
-              estadoGoma1: v?.estadoGoma1 ?? initial?.estadoGoma1 ?? false,
-              estadoGoma2: v?.estadoGoma2 ?? initial?.estadoGoma2 ?? false,
-              estadoGoma3: v?.estadoGoma3 ?? initial?.estadoGoma3 ?? false,
-              estadoGoma4: v?.estadoGoma4 ?? initial?.estadoGoma4 ?? false,
-              fecha: value as DateTime,
-              empleadoInspeccion: v?.empleadoInspeccion ?? initial?.empleadoInspeccion ?? 0,
-              estado: v?.estado ?? initial?.estado ?? true,
-            ),
+            getValue: (inspection) => inspection?.fecha ?? DateTime.now(),
+            applyValue: (inspection, value) => inspection,
+            validator: (value) {
+              if (value == null) {
+                return 'Fecha es requerida';
+              }
+              return null;
+            },
           ),
           FormFieldDefinition<Inspection>(
             key: 'cantidadCombustible',
             label: 'Cantidad de Combustible',
             fieldType: 'dropdown',
+            getValue: (inspection) => inspection?.cantidadCombustible ?? CantidadCombustible.unCuarto,
+            applyValue: (inspection, value) => inspection,
             options: const [
               {'value': CantidadCombustible.unCuarto, 'label': '1/4'},
               {'value': CantidadCombustible.medio, 'label': '1/2'},
               {'value': CantidadCombustible.tresCuartos, 'label': '3/4'},
               {'value': CantidadCombustible.lleno, 'label': 'Lleno'},
             ],
-            getValue: (v) => v?.cantidadCombustible ?? CantidadCombustible.unCuarto,
-            applyValue: (v, value) => Inspection(
-              id: v?.id ?? initial?.id ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              tieneRalladuras: v?.tieneRalladuras ?? initial?.tieneRalladuras ?? false,
-              cantidadCombustible: value as CantidadCombustible,
-              tieneGomaRespuesta: v?.tieneGomaRespuesta ?? initial?.tieneGomaRespuesta ?? false,
-              tieneGato: v?.tieneGato ?? initial?.tieneGato ?? false,
-              tieneRoturasCristal: v?.tieneRoturasCristal ?? initial?.tieneRoturasCristal ?? false,
-              estadoGoma1: v?.estadoGoma1 ?? initial?.estadoGoma1 ?? false,
-              estadoGoma2: v?.estadoGoma2 ?? initial?.estadoGoma2 ?? false,
-              estadoGoma3: v?.estadoGoma3 ?? initial?.estadoGoma3 ?? false,
-              estadoGoma4: v?.estadoGoma4 ?? initial?.estadoGoma4 ?? false,
-              fecha: v?.fecha ?? initial?.fecha ?? DateTime.now(),
-              empleadoInspeccion: v?.empleadoInspeccion ?? initial?.empleadoInspeccion ?? 0,
-              estado: v?.estado ?? initial?.estado ?? true,
-            ),
+            validator: (value) {
+              if (value == null) {
+                return 'Cantidad de combustible es requerida';
+              }
+              return null;
+            },
           ),
+          // Campos Sí/No usando el nuevo tipo boolean
           FormFieldDefinition<Inspection>(
             key: 'tieneRalladuras',
             label: 'Tiene Ralladuras',
-            fieldType: 'checkbox',
-            getValue: (v) => v?.tieneRalladuras ?? false,
-            applyValue: (v, value) => Inspection(
-              id: v?.id ?? initial?.id ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              tieneRalladuras: value as bool,
-              cantidadCombustible: v?.cantidadCombustible ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
-              tieneGomaRespuesta: v?.tieneGomaRespuesta ?? initial?.tieneGomaRespuesta ?? false,
-              tieneGato: v?.tieneGato ?? initial?.tieneGato ?? false,
-              tieneRoturasCristal: v?.tieneRoturasCristal ?? initial?.tieneRoturasCristal ?? false,
-              estadoGoma1: v?.estadoGoma1 ?? initial?.estadoGoma1 ?? false,
-              estadoGoma2: v?.estadoGoma2 ?? initial?.estadoGoma2 ?? false,
-              estadoGoma3: v?.estadoGoma3 ?? initial?.estadoGoma3 ?? false,
-              estadoGoma4: v?.estadoGoma4 ?? initial?.estadoGoma4 ?? false,
-              fecha: v?.fecha ?? initial?.fecha ?? DateTime.now(),
-              empleadoInspeccion: v?.empleadoInspeccion ?? initial?.empleadoInspeccion ?? 0,
-              estado: v?.estado ?? initial?.estado ?? true,
-            ),
+            fieldType: 'boolean',
+            getValue: (inspection) => inspection?.tieneRalladuras,
+            applyValue: (inspection, value) => inspection,
+            validator: (value) {
+              if (value == null) {
+                return 'Este campo es requerido';
+              }
+              return null;
+            },
           ),
           FormFieldDefinition<Inspection>(
             key: 'tieneGomaRespuesta',
             label: 'Tiene Goma de Respuesta',
-            fieldType: 'checkbox',
-            getValue: (v) => v?.tieneGomaRespuesta ?? false,
-            applyValue: (v, value) => Inspection(
-              id: v?.id ?? initial?.id ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              tieneRalladuras: v?.tieneRalladuras ?? initial?.tieneRalladuras ?? false,
-              cantidadCombustible: v?.cantidadCombustible ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
-              tieneGomaRespuesta: value as bool,
-              tieneGato: v?.tieneGato ?? initial?.tieneGato ?? false,
-              tieneRoturasCristal: v?.tieneRoturasCristal ?? initial?.tieneRoturasCristal ?? false,
-              estadoGoma1: v?.estadoGoma1 ?? initial?.estadoGoma1 ?? false,
-              estadoGoma2: v?.estadoGoma2 ?? initial?.estadoGoma2 ?? false,
-              estadoGoma3: v?.estadoGoma3 ?? initial?.estadoGoma3 ?? false,
-              estadoGoma4: v?.estadoGoma4 ?? initial?.estadoGoma4 ?? false,
-              fecha: v?.fecha ?? initial?.fecha ?? DateTime.now(),
-              empleadoInspeccion: v?.empleadoInspeccion ?? initial?.empleadoInspeccion ?? 0,
-              estado: v?.estado ?? initial?.estado ?? true,
-            ),
+            fieldType: 'boolean',
+            getValue: (inspection) => inspection?.tieneGomaRespuesta,
+            applyValue: (inspection, value) => inspection,
+            validator: (value) {
+              if (value == null) {
+                return 'Este campo es requerido';
+              }
+              return null;
+            },
           ),
           FormFieldDefinition<Inspection>(
             key: 'tieneGato',
             label: 'Tiene Gato',
-            fieldType: 'checkbox',
-            getValue: (v) => v?.tieneGato ?? false,
-            applyValue: (v, value) => Inspection(
-              id: v?.id ?? initial?.id ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              tieneRalladuras: v?.tieneRalladuras ?? initial?.tieneRalladuras ?? false,
-              cantidadCombustible: v?.cantidadCombustible ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
-              tieneGomaRespuesta: v?.tieneGomaRespuesta ?? initial?.tieneGomaRespuesta ?? false,
-              tieneGato: value as bool,
-              tieneRoturasCristal: v?.tieneRoturasCristal ?? initial?.tieneRoturasCristal ?? false,
-              estadoGoma1: v?.estadoGoma1 ?? initial?.estadoGoma1 ?? false,
-              estadoGoma2: v?.estadoGoma2 ?? initial?.estadoGoma2 ?? false,
-              estadoGoma3: v?.estadoGoma3 ?? initial?.estadoGoma3 ?? false,
-              estadoGoma4: v?.estadoGoma4 ?? initial?.estadoGoma4 ?? false,
-              fecha: v?.fecha ?? initial?.fecha ?? DateTime.now(),
-              empleadoInspeccion: v?.empleadoInspeccion ?? initial?.empleadoInspeccion ?? 0,
-              estado: v?.estado ?? initial?.estado ?? true,
-            ),
+            fieldType: 'boolean',
+            getValue: (inspection) => inspection?.tieneGato,
+            applyValue: (inspection, value) => inspection,
+            validator: (value) {
+              if (value == null) {
+                return 'Este campo es requerido';
+              }
+              return null;
+            },
           ),
           FormFieldDefinition<Inspection>(
             key: 'tieneRoturasCristal',
             label: 'Tiene Roturas en Cristal',
-            fieldType: 'checkbox',
-            getValue: (v) => v?.tieneRoturasCristal ?? false,
-            applyValue: (v, value) => Inspection(
-              id: v?.id ?? initial?.id ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              tieneRalladuras: v?.tieneRalladuras ?? initial?.tieneRalladuras ?? false,
-              cantidadCombustible: v?.cantidadCombustible ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
-              tieneGomaRespuesta: v?.tieneGomaRespuesta ?? initial?.tieneGomaRespuesta ?? false,
-              tieneGato: v?.tieneGato ?? initial?.tieneGato ?? false,
-              tieneRoturasCristal: value as bool,
-              estadoGoma1: v?.estadoGoma1 ?? initial?.estadoGoma1 ?? false,
-              estadoGoma2: v?.estadoGoma2 ?? initial?.estadoGoma2 ?? false,
-              estadoGoma3: v?.estadoGoma3 ?? initial?.estadoGoma3 ?? false,
-              estadoGoma4: v?.estadoGoma4 ?? initial?.estadoGoma4 ?? false,
-              fecha: v?.fecha ?? initial?.fecha ?? DateTime.now(),
-              empleadoInspeccion: v?.empleadoInspeccion ?? initial?.empleadoInspeccion ?? 0,
-              estado: v?.estado ?? initial?.estado ?? true,
-            ),
+            fieldType: 'boolean',
+            getValue: (inspection) => inspection?.tieneRoturasCristal,
+            applyValue: (inspection, value) => inspection,
+            validator: (value) {
+              if (value == null) {
+                return 'Este campo es requerido';
+              }
+              return null;
+            },
+          ),
+          // Estados de gomas
+          FormFieldDefinition<Inspection>(
+            key: 'estadoGoma1',
+            label: 'Estado de Goma 1 (Buen Estado)',
+            fieldType: 'boolean',
+            getValue: (inspection) => inspection?.estadoGoma1,
+            applyValue: (inspection, value) => inspection,
+            validator: (value) {
+              if (value == null) {
+                return 'Este campo es requerido';
+              }
+              return null;
+            },
+          ),
+          FormFieldDefinition<Inspection>(
+            key: 'estadoGoma2',
+            label: 'Estado de Goma 2 (Buen Estado)',
+            fieldType: 'boolean',
+            getValue: (inspection) => inspection?.estadoGoma2,
+            applyValue: (inspection, value) => inspection,
+            validator: (value) {
+              if (value == null) {
+                return 'Este campo es requerido';
+              }
+              return null;
+            },
+          ),
+          FormFieldDefinition<Inspection>(
+            key: 'estadoGoma3',
+            label: 'Estado de Goma 3 (Buen Estado)',
+            fieldType: 'boolean',
+            getValue: (inspection) => inspection?.estadoGoma3,
+            applyValue: (inspection, value) => inspection,
+            validator: (value) {
+              if (value == null) {
+                return 'Este campo es requerido';
+              }
+              return null;
+            },
+          ),
+          FormFieldDefinition<Inspection>(
+            key: 'estadoGoma4',
+            label: 'Estado de Goma 4 (Buen Estado)',
+            fieldType: 'boolean',
+            getValue: (inspection) => inspection?.estadoGoma4,
+            applyValue: (inspection, value) => inspection,
+            validator: (value) {
+              if (value == null) {
+                return 'Este campo es requerido';
+              }
+              return null;
+            },
+          ),
+          FormFieldDefinition<Inspection>(
+            key: 'estado',
+            label: 'Inspección Activa',
+            fieldType: 'boolean',
+            getValue: (inspection) => inspection?.estado ?? true,
+            applyValue: (inspection, value) => inspection,
+            validator: (value) {
+              if (value == null) {
+                return 'Este campo es requerido';
+              }
+              return null;
+            },
           ),
         ],
       ),
@@ -377,6 +365,9 @@ class _InspectionScreenState extends State<InspectionScreen> {
   CollectionItemData _buildInspectionItem(
     BuildContext context,
     Inspection inspeccion,
+    String vehicleName,
+    String clientName,
+    String employeeName,
   ) {
     final isActive = inspeccion.estado;
     final hasIssues = inspeccion.tieneRalladuras ||
@@ -393,7 +384,7 @@ class _InspectionScreenState extends State<InspectionScreen> {
       ),
       badge: CollectionBadgeData(text: 'I${inspeccion.id}'),
       title: 'Inspección #${inspeccion.id}',
-      subtitle: 'Vehículo: ${inspeccion.vehiculo} • Cliente: ${inspeccion.cliente}',
+      subtitle: 'Vehículo: $vehicleName • Cliente: $clientName',
       statusChip: CollectionStatusChip(
         label: hasIssues ? 'Con observaciones' : 'Aprobada',
         backgroundColor: hasIssues ? AppColors.warning.withOpacity(0.16) : AppColors.success.withOpacity(0.16),
@@ -408,20 +399,20 @@ class _InspectionScreenState extends State<InspectionScreen> {
         ),
         CollectionDetailInfo(
           label: 'Vehículo',
-          value: 'ID ${inspeccion.vehiculo}',
-          inlineValue: 'Vehículo: ${inspeccion.vehiculo}',
+          value: vehicleName,
+          inlineValue: 'Vehículo: $vehicleName',
           icon: Icons.directions_car_outlined,
         ),
         CollectionDetailInfo(
           label: 'Cliente',
-          value: 'ID ${inspeccion.cliente}',
-          inlineValue: 'Cliente: ${inspeccion.cliente}',
+          value: clientName,
+          inlineValue: 'Cliente: $clientName',
           icon: Icons.person_outlined,
         ),
         CollectionDetailInfo(
           label: 'Inspector',
-          value: 'ID ${inspeccion.empleadoInspeccion}',
-          inlineValue: 'Inspector: ${inspeccion.empleadoInspeccion}',
+          value: employeeName,
+          inlineValue: 'Inspector: $employeeName',
           icon: Icons.badge_outlined,
         ),
         CollectionDetailInfo(
@@ -551,6 +542,27 @@ class _InspectionScreenState extends State<InspectionScreen> {
           Text(value ? 'Sí' : 'No'),
         ],
       ),
+    );
+  }
+
+  // Helper method to convert form values to Inspection object
+  Inspection _mapToInspection(Map<String, dynamic> values, Inspection? initial) {
+    return Inspection(
+      id: initial?.id ?? 0,
+      vehiculo: values['vehiculo'] as int? ?? 0,
+      cliente: values['cliente'] as int? ?? 0,
+      tieneRalladuras: values['tieneRalladuras'] as bool? ?? false,
+      cantidadCombustible: values['cantidadCombustible'] as CantidadCombustible? ?? CantidadCombustible.unCuarto,
+      tieneGomaRespuesta: values['tieneGomaRespuesta'] as bool? ?? false,
+      tieneGato: values['tieneGato'] as bool? ?? false,
+      tieneRoturasCristal: values['tieneRoturasCristal'] as bool? ?? false,
+      estadoGoma1: values['estadoGoma1'] as bool? ?? false,
+      estadoGoma2: values['estadoGoma2'] as bool? ?? false,
+      estadoGoma3: values['estadoGoma3'] as bool? ?? false,
+      estadoGoma4: values['estadoGoma4'] as bool? ?? false,
+      fecha: values['fecha'] as DateTime? ?? DateTime.now(),
+      empleadoInspeccion: values['empleadoInspeccion'] as int? ?? 0,
+      estado: values['estado'] as bool? ?? true,
     );
   }
 }

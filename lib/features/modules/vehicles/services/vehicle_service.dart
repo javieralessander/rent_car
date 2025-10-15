@@ -12,6 +12,24 @@ class VehicleService {
     );
   }
 
+  static Future<List<Vehicle>> getAvailable() async {
+    return await _client.getList<Vehicle>(
+      '/vehiculos/disponibles',
+      (e) => Vehicle.fromJson(e as Map<String, dynamic>),
+    );
+  }
+
+  static Future<Vehicle?> getById(int id) async {
+    try {
+      return await _client.get<Vehicle>(
+        '/vehiculos/$id',
+        (e) => Vehicle.fromJson(e as Map<String, dynamic>),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
   static Future<Vehicle> create(Vehicle vehiculo) async {
     return await _client.post<Vehicle>(
       '/vehiculos',

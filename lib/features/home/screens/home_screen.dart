@@ -162,34 +162,114 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildQuickActionsSection() {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 8,
-      alignment: WrapAlignment.center,
-      children: [
-       
-        ElevatedButton.icon(
-          icon: const Icon(Icons.directions_car),
-          label: const Text('Vehículos'),
-          onPressed: () {
-            context.pushReplacementNamed(VehicleScreen.name);
-          },
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Accesos Rápidos',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.dark,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            alignment: WrapAlignment.start,
+            children: [
+              _buildQuickActionCard(
+                icon: Icons.directions_car,
+                label: 'Vehículos',
+                color: AppColors.primary,
+                onTap: () => context.pushReplacementNamed(VehicleScreen.name),
+              ),
+              _buildQuickActionCard(
+                icon: Icons.people,
+                label: 'Clientes',
+                color: AppColors.secondary,
+                onTap: () => context.pushReplacementNamed(ClientScreen.name),
+              ),
+              _buildQuickActionCard(
+                icon: Icons.car_rental,
+                label: 'Rentas',
+                color: AppColors.success,
+                onTap: () => context.pushReplacementNamed(RentalScreen.name),
+              ),
+              _buildQuickActionCard(
+                icon: Icons.category,
+                label: 'Tipos Vehículos',
+                color: AppColors.info,
+                onTap: () => context.pushReplacementNamed(VehicleTypeScreen.name),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 120,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.category),
-          label: const Text('Tipos Vehículos'),
-          onPressed: () {
-            context.pushReplacementNamed(VehicleTypeScreen.name);
-          },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.dark,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.people),
-          label: const Text('Clientes'),
-          onPressed: () {
-            context.pushReplacementNamed(ClientScreen.name);
-          },
-        ),
-      ],
+      ),
     );
   }
 

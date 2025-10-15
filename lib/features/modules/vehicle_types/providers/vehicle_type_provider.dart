@@ -54,9 +54,7 @@ class VehicleTypeProvider extends ChangeNotifier {
       final data = await VehicleTypeService.getAll();
       debugPrint('Tipos de vehículos recibidos: \n$data');
       _todos = data;
-      if (_todos.isEmpty) {
-        _error = 'No se encontraron tipos de vehículos.';
-      }
+      // Lista vacía es un estado válido, no un error
       _actualizarPagina();
     } catch (e) {
       debugPrint('Error al cargar tipos de vehículos: $e');

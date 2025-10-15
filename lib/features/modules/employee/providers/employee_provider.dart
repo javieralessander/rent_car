@@ -54,9 +54,7 @@ class EmployeeProvider extends ChangeNotifier {
       final data = await EmployeeService.getAll();
       debugPrint('Empleados recibidos: \n$data');
       _todos = data;
-      if (_todos.isEmpty) {
-        _error = 'No se encontraron empleados.';
-      }
+      // Lista vacía es un estado válido, no un error
       _actualizarPagina();
     } catch (e) {
       debugPrint('Error al cargar empleados: $e');

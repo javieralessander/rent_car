@@ -55,9 +55,7 @@ class InspectionProvider extends ChangeNotifier {
     try {
       final data = await InspectionService.getAll();
       _todos = data;
-      if (_todos.isEmpty) {
-        _error = 'No se encontraron inspecciones.';
-      }
+      // Lista vacía es un estado válido, no un error
       _actualizarPagina();
     } catch (e) {
       debugPrint('Error al cargar inspecciones: $e');

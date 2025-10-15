@@ -1,33 +1,39 @@
 import 'dart:convert';
+import '../../brand/models/brand_model.dart';
 
-class VehicleModel {
-  final int id;
-  final int idMarca;
+class Model {
+  final int? id;
+  final Brand? marca;
   final String descripcion;
   final bool estado;
 
-  VehicleModel({
-    required this.id,
-    required this.idMarca,
+  Model({
+    this.id,
+    this.marca,
     required this.descripcion,
     this.estado = true,
   });
 
-  factory VehicleModel.fromJson(Map<String, dynamic> json) {
-    return VehicleModel(
-      id: int.parse(json['id'].toString()),
-      idMarca: int.parse(json['idMarca'].toString()),
+  factory Model.fromJson(Map<String, dynamic> json) {
+    return Model(
+      id: json['id'] != null ? int.parse(json['id'].toString()) : null,
+      marca: json['marca'] != null ? Brand.fromJson(json['marca']) : null,
       descripcion: json['descripcion'],
       estado: json['estado'] ?? true,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'idMarca': idMarca, 'descripcion': descripcion, 'estado': estado};
+    return {
+      if (id != null) 'id': id,
+      'marca': marca?.toJson(),
+      'descripcion': descripcion,
+      'estado': estado,
+    };
   }
 
-  factory VehicleModel.fromRawJson(String str) =>
-      VehicleModel.fromJson(json.decode(str));
+  factory Model.fromRawJson(String str) =>
+      Model.fromJson(json.decode(str));
 
   String toRawJson() => json.encode(toJson());
 
@@ -37,7 +43,7 @@ class VehicleModel {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is VehicleModel &&
+      other is Model &&
           runtimeType == other.runtimeType &&
           id == other.id;
 

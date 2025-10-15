@@ -1,12 +1,9 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
 import '../../../../core/providers/base_collection_provider.dart';
 import '../models/vehicle_model.dart';
 import '../services/vehicle_service.dart';
 
-class VehicleProvider extends BaseCollectionProvider<Vehicle> {
-
-  // Métodos requeridos por BaseCollectionProvider
+/// Provider mejorado para vehículos usando el provider base
+class VehicleProviderImproved extends BaseCollectionProvider<Vehicle> {
   @override
   Future<List<Vehicle>> fetchAll() async {
     return await VehicleService.getAll();
@@ -41,24 +38,6 @@ class VehicleProvider extends BaseCollectionProvider<Vehicle> {
 
   @override
   dynamic getId(Vehicle item) => item.id;
-
-  // Métodos para compatibilidad con código existente
-  List<Vehicle> get vehiculos => items;
-  List<Vehicle> get todosVehiculos => allItems;
-
-  set busqueda(String value) => setSearch(value);
-
-  Future<void> cargarVehiculos() async => await initialize();
-
-  void cambiarPagina(int nuevaPagina) => changePage(nuevaPagina);
-
-  void cambiarRegistrosPorPagina(int cantidad) => changeItemsPerPage(cantidad);
-
-  Future<void> agregarVehiculo(Vehicle vehiculo) async => await addItem(vehiculo);
-
-  Future<void> actualizarVehiculo(Vehicle vehiculo) async => await updateItem(vehiculo);
-
-  Future<void> eliminarVehiculo(int id) async => await removeItem(id);
 
   // Métodos específicos para vehículos
 
@@ -101,6 +80,7 @@ class VehicleProvider extends BaseCollectionProvider<Vehicle> {
   /// Limpia filtros personalizados y restaura vista normal
   void clearCustomFilter() {
     resetPagination();
+    // La vista se actualiza automáticamente
   }
 
   /// Busca vehículos por placa
@@ -141,21 +121,5 @@ class VehicleProvider extends BaseCollectionProvider<Vehicle> {
     }
 
     return grouped;
-  }
-
-  /// Valida si una placa ya existe
-  bool isPlateExists(String plate, {int? excludeId}) {
-    return allItems.any((v) =>
-      v.noPlaca.toLowerCase() == plate.toLowerCase() &&
-      (excludeId == null || v.id != excludeId)
-    );
-  }
-
-  /// Valida si un chasis ya existe
-  bool isChasisExists(String chasis, {int? excludeId}) {
-    return allItems.any((v) =>
-      v.noChasis.toLowerCase() == chasis.toLowerCase() &&
-      (excludeId == null || v.id != excludeId)
-    );
   }
 }

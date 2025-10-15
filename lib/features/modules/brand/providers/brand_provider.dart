@@ -50,9 +50,7 @@ class BrandProvider extends ChangeNotifier {
       final data = await BrandService.getAll();
       debugPrint('Marcas recibidas: \n$data');
       _todos = data;
-      if (_todos.isEmpty) {
-        _error = 'No se encontraron marcas.';
-      }
+      // Lista vacía es un estado válido, no un error
       _actualizarPagina();
     } catch (e) {
       debugPrint('Error al cargar marcas: $e');

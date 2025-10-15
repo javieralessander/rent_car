@@ -9,6 +9,7 @@ import '../../vehicles/providers/vehicle_provider.dart';
 import '../../clients/providers/client_provider.dart';
 import '../../employee/providers/employee_provider.dart';
 import '../models/rental_model.dart';
+import '../models/rental_form.dart';
 import '../providers/rental_provider.dart';
 
 class RentalScreen extends StatefulWidget {
@@ -36,8 +37,12 @@ class _RentalScreenState extends State<RentalScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<RentalProvider>();
+    final vehicleProvider = context.watch<VehicleProvider>();
+    final clientProvider = context.watch<ClientProvider>();
+    final employeeProvider = context.watch<EmployeeProvider>();
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 800;
+
 
     return Scaffold(
       drawer: isMobile ? const CustomDrawer() : null,
@@ -46,7 +51,13 @@ class _RentalScreenState extends State<RentalScreen> {
         title: 'Gestión de Rentas',
         isLoading: provider.isLoading,
         items: provider.rentas
-            .map((renta) => _buildRentalItem(context, renta))
+            .map((renta) => _buildRentalItem(
+                context,
+                renta,
+                renta.vehiculo != null ? '${renta.vehiculo!.noPlaca} - ${renta.vehiculo!.descripcion}' : 'Sin vehículo',
+                renta.cliente != null ? '${renta.cliente!.cedula} - ${renta.cliente!.nombre}' : 'Sin cliente',
+                renta.empleado != null ? '${renta.empleado!.cedula} - ${renta.empleado!.nombre}' : 'Sin empleado',
+              ))
             .toList(),
         viewMode: _viewMode,
         onViewModeChanged: (mode) => setState(() => _viewMode = mode),
@@ -101,37 +112,57 @@ class _RentalScreenState extends State<RentalScreen> {
 
     await showDialog(
       context: context,
-      builder: (_) => GenericFormDialog<Rental>(
+      builder: (_) => GenericFormDialog<RentalForm>(
         title: initial == null ? 'Nueva Renta' : 'Editar Renta',
-        initialData: initial,
-        onSubmit: (data) async {
+        initialData: initial != null ? RentalForm.fromRental(initial) : null,
+        onSubmit: (rentalForm) async {
+          // Convertir RentalForm a Rental completo
+          final empleado = employeeProvider.todosEmpleados.firstWhere(
+            (e) => e.id == rentalForm.empleadoId,
+            orElse: () => employeeProvider.todosEmpleados.first,
+          );
+          final vehiculo = vehicleProvider.todosVehiculos.firstWhere(
+            (v) => v.id == rentalForm.vehiculoId,
+            orElse: () => vehicleProvider.todosVehiculos.first,
+          );
+          final cliente = clientProvider.todosClientes.firstWhere(
+            (c) => c.id == rentalForm.clienteId,
+            orElse: () => clientProvider.todosClientes.first,
+          );
+
+          final rental = rentalForm.toRental(
+            empleado: empleado,
+            vehiculo: vehiculo,
+            cliente: cliente,
+          );
+
           if (initial == null) {
-            await context.read<RentalProvider>().agregarRenta(data);
+            await context.read<RentalProvider>().agregarRenta(rental);
           } else {
-            await context.read<RentalProvider>().actualizarRenta(data);
+            await context.read<RentalProvider>().actualizarRenta(rental);
           }
         },
-        fromValues: (values, previous) => Rental(
-          id: previous?.id ?? initial?.id ?? 0,
-          empleado: values['empleado'] ?? previous?.empleado ?? initial?.empleado ?? employeeProvider.todosEmpleados.first.id,
-          vehiculo: values['vehiculo'] ?? previous?.vehiculo ?? initial?.vehiculo ?? vehicleProvider.todosVehiculos.first.id,
-          cliente: values['cliente'] ?? previous?.cliente ?? initial?.cliente ?? clientProvider.todosClientes.first.id,
-          fechaRenta: values['fechaRenta'] ?? previous?.fechaRenta ?? initial?.fechaRenta ?? DateTime.now(),
-          fechaDevolucion: values['fechaDevolucion'] ?? previous?.fechaDevolucion ?? initial?.fechaDevolucion,
-          montoPorDia: (() {
-            final val = values['montoPorDia'];
+        fromValues: (values, previous) => RentalForm(
+          noRenta: previous?.noRenta ?? (initial != null ? RentalForm.fromRental(initial).noRenta : null),
+          empleadoId: values['empleadoId'] ?? previous?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : employeeProvider.todosEmpleados.first.id!),
+          vehiculoId: values['vehiculoId'] ?? previous?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : vehicleProvider.todosVehiculos.first.id!),
+          clienteId: values['clienteId'] ?? previous?.clienteId ?? (initial != null ? RentalForm.fromRental(initial).clienteId : clientProvider.todosClientes.first.id!),
+          fechaRenta: values['fechaRenta'] ?? previous?.fechaRenta ?? (initial != null ? RentalForm.fromRental(initial).fechaRenta : DateTime.now()),
+          fechaDevolucion: values['fechaDevolucion'] ?? previous?.fechaDevolucion ?? (initial != null ? RentalForm.fromRental(initial).fechaDevolucion : null),
+          montoDia: (() {
+            final val = values['montoDia'];
             if (val is double) return val;
             if (val is int) return val.toDouble();
             if (val is String) return double.tryParse(val) ?? 0.0;
-            return previous?.montoPorDia ?? initial?.montoPorDia ?? 0.0;
+            return previous?.montoDia ?? (initial != null ? RentalForm.fromRental(initial).montoDia : 0.0);
           })(),
-          cantidadDias: values['cantidadDias'] ?? previous?.cantidadDias ?? initial?.cantidadDias ?? 1,
-          comentario: values['comentario'] ?? previous?.comentario ?? initial?.comentario ?? '',
-          estado: values['estado'] ?? previous?.estado ?? initial?.estado ?? true,
+          cantidadDias: values['cantidadDias'] ?? previous?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
+          comentario: values['comentario'] ?? previous?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
+          estado: values['estado'] ?? previous?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA),
         ),
         fields: [
-          FormFieldDefinition<Rental>(
-            key: 'empleado',
+          FormFieldDefinition<RentalForm>(
+            key: 'empleadoId',
             label: 'Empleado',
             fieldType: 'dropdown',
             options: employeeProvider.todosEmpleados
@@ -143,26 +174,26 @@ class _RentalScreenState extends State<RentalScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.empleado ?? employeeProvider.todosEmpleados.first.id,
-            applyValue: (v, value) => Rental(
-              id: v?.id ?? initial?.id ?? 0,
-              empleado: value as int,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              fechaRenta: v?.fechaRenta ?? initial?.fechaRenta ?? DateTime.now(),
-              fechaDevolucion: v?.fechaDevolucion ?? initial?.fechaDevolucion,
-              montoPorDia: v?.montoPorDia ?? initial?.montoPorDia ?? 0.0,
-              cantidadDias: v?.cantidadDias ?? initial?.cantidadDias ?? 1,
-              comentario: v?.comentario ?? initial?.comentario ?? '',
-              estado: v?.estado ?? initial?.estado ?? true,
+            getValue: (v) => v?.empleadoId ?? employeeProvider.todosEmpleados.first.id,
+            applyValue: (v, value) => RentalForm(
+              noRenta: v?.noRenta ?? initial?.noRenta,
+              empleadoId: value as int,
+              vehiculoId: v?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : 0),
+              clienteId: v?.clienteId ?? (initial != null ? RentalForm.fromRental(initial).clienteId : 0),
+              fechaRenta: v?.fechaRenta ?? (initial != null ? RentalForm.fromRental(initial).fechaRenta : DateTime.now()),
+              fechaDevolucion: v?.fechaDevolucion ?? (initial != null ? RentalForm.fromRental(initial).fechaDevolucion : null),
+              montoDia: v?.montoDia ?? (initial != null ? RentalForm.fromRental(initial).montoDia : 0.0),
+              cantidadDias: v?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
+              comentario: v?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
+              estado: v?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA),
             ),
           ),
-          FormFieldDefinition<Rental>(
-            key: 'vehiculo',
+          FormFieldDefinition<RentalForm>(
+            key: 'vehiculoId',
             label: 'Vehículo',
             fieldType: 'dropdown',
             options: vehicleProvider.todosVehiculos
-                .map((vehicle) => {'value': vehicle.id, 'label': '${vehicle.numeroPlaca} - ${vehicle.descripcion}'})
+                .map((vehicle) => {'value': vehicle.id, 'label': '${vehicle.noPlaca} - ${vehicle.descripcion}'})
                 .toList(),
             validator: (value) {
               if (value == null) {
@@ -170,22 +201,22 @@ class _RentalScreenState extends State<RentalScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.vehiculo ?? vehicleProvider.todosVehiculos.first.id,
-            applyValue: (v, value) => Rental(
-              id: v?.id ?? initial?.id ?? 0,
-              empleado: v?.empleado ?? initial?.empleado ?? 0,
-              vehiculo: value as int,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              fechaRenta: v?.fechaRenta ?? initial?.fechaRenta ?? DateTime.now(),
-              fechaDevolucion: v?.fechaDevolucion ?? initial?.fechaDevolucion,
-              montoPorDia: v?.montoPorDia ?? initial?.montoPorDia ?? 0.0,
-              cantidadDias: v?.cantidadDias ?? initial?.cantidadDias ?? 1,
-              comentario: v?.comentario ?? initial?.comentario ?? '',
-              estado: v?.estado ?? initial?.estado ?? true,
+            getValue: (v) => v?.vehiculoId ?? vehicleProvider.todosVehiculos.first.id,
+            applyValue: (v, value) => RentalForm(
+              noRenta: v?.noRenta ?? initial?.noRenta,
+              empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
+              vehiculoId: value as int,
+              clienteId: v?.clienteId ?? (initial != null ? RentalForm.fromRental(initial).clienteId : 0),
+              fechaRenta: v?.fechaRenta ?? (initial != null ? RentalForm.fromRental(initial).fechaRenta : DateTime.now()),
+              fechaDevolucion: v?.fechaDevolucion ?? (initial != null ? RentalForm.fromRental(initial).fechaDevolucion : null),
+              montoDia: v?.montoDia ?? (initial != null ? RentalForm.fromRental(initial).montoDia : 0.0),
+              cantidadDias: v?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
+              comentario: v?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
+              estado: v?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA),
             ),
           ),
-          FormFieldDefinition<Rental>(
-            key: 'cliente',
+          FormFieldDefinition<RentalForm>(
+            key: 'clienteId',
             label: 'Cliente',
             fieldType: 'dropdown',
             options: clientProvider.todosClientes
@@ -197,21 +228,21 @@ class _RentalScreenState extends State<RentalScreen> {
               }
               return null;
             },
-            getValue: (v) => v?.cliente ?? clientProvider.todosClientes.first.id,
-            applyValue: (v, value) => Rental(
-              id: v?.id ?? initial?.id ?? 0,
-              empleado: v?.empleado ?? initial?.empleado ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: value as int,
-              fechaRenta: v?.fechaRenta ?? initial?.fechaRenta ?? DateTime.now(),
-              fechaDevolucion: v?.fechaDevolucion ?? initial?.fechaDevolucion,
-              montoPorDia: v?.montoPorDia ?? initial?.montoPorDia ?? 0.0,
-              cantidadDias: v?.cantidadDias ?? initial?.cantidadDias ?? 1,
-              comentario: v?.comentario ?? initial?.comentario ?? '',
-              estado: v?.estado ?? initial?.estado ?? true,
+            getValue: (v) => v?.clienteId ?? clientProvider.todosClientes.first.id,
+            applyValue: (v, value) => RentalForm(
+              noRenta: v?.noRenta ?? initial?.noRenta,
+              empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
+              vehiculoId: v?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : 0),
+              clienteId: value as int,
+              fechaRenta: v?.fechaRenta ?? (initial != null ? RentalForm.fromRental(initial).fechaRenta : DateTime.now()),
+              fechaDevolucion: v?.fechaDevolucion ?? (initial != null ? RentalForm.fromRental(initial).fechaDevolucion : null),
+              montoDia: v?.montoDia ?? (initial != null ? RentalForm.fromRental(initial).montoDia : 0.0),
+              cantidadDias: v?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
+              comentario: v?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
+              estado: v?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA),
             ),
           ),
-          FormFieldDefinition<Rental>(
+          FormFieldDefinition<RentalForm>(
             key: 'fechaRenta',
             label: 'Fecha de Renta',
             fieldType: 'date',
@@ -223,65 +254,65 @@ class _RentalScreenState extends State<RentalScreen> {
               }
               return null;
             },
-            applyValue: (v, value) => Rental(
-              id: v?.id ?? initial?.id ?? 0,
-              empleado: v?.empleado ?? initial?.empleado ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
+            applyValue: (v, value) => RentalForm(
+              noRenta: v?.noRenta ?? initial?.noRenta,
+              empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
+              vehiculoId: v?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : 0),
+              clienteId: v?.clienteId ?? (initial != null ? RentalForm.fromRental(initial).clienteId : 0),
               fechaRenta: value as DateTime,
-              fechaDevolucion: v?.fechaDevolucion ?? initial?.fechaDevolucion,
-              montoPorDia: v?.montoPorDia ?? initial?.montoPorDia ?? 0.0,
-              cantidadDias: v?.cantidadDias ?? initial?.cantidadDias ?? 1,
-              comentario: v?.comentario ?? initial?.comentario ?? '',
-              estado: v?.estado ?? initial?.estado ?? true,
+              fechaDevolucion: v?.fechaDevolucion ?? (initial != null ? RentalForm.fromRental(initial).fechaDevolucion : null),
+              montoDia: v?.montoDia ?? (initial != null ? RentalForm.fromRental(initial).montoDia : 0.0),
+              cantidadDias: v?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
+              comentario: v?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
+              estado: v?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA),
             ),
           ),
-          FormFieldDefinition<Rental>(
+          FormFieldDefinition<RentalForm>(
             key: 'fechaDevolucion',
             label: 'Fecha de devolución',
             fieldType: 'date',
             getValue: (v) => v?.fechaDevolucion,
-            applyValue: (v, value) => Rental(
-              id: v?.id ?? initial?.id ?? 0,
-              empleado: v?.empleado ?? initial?.empleado ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              fechaRenta: v?.fechaRenta ?? initial?.fechaRenta ?? DateTime.now(),
+            applyValue: (v, value) => RentalForm(
+              noRenta: v?.noRenta ?? initial?.noRenta,
+              empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
+              vehiculoId: v?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : 0),
+              clienteId: v?.clienteId ?? (initial != null ? RentalForm.fromRental(initial).clienteId : 0),
+              fechaRenta: v?.fechaRenta ?? (initial != null ? RentalForm.fromRental(initial).fechaRenta : DateTime.now()),
               fechaDevolucion: value as DateTime?,
-              montoPorDia: v?.montoPorDia ?? initial?.montoPorDia ?? 0.0,
-              cantidadDias: v?.cantidadDias ?? initial?.cantidadDias ?? 1,
-              comentario: v?.comentario ?? initial?.comentario ?? '',
-              estado: v?.estado ?? initial?.estado ?? true,
+              montoDia: v?.montoDia ?? (initial != null ? RentalForm.fromRental(initial).montoDia : 0.0),
+              cantidadDias: v?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
+              comentario: v?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
+              estado: v?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA),
             ),
           ),
-          FormFieldDefinition<Rental>(
-            key: 'montoPorDia',
+          FormFieldDefinition<RentalForm>(
+            key: 'montoDia',
             label: 'Monto por día',
             fieldType: 'decimal',
             textValidator: (value) => InputValidators.requiredDecimal(
               value,
               fieldName: 'Monto por día',
             ),
-            getValue: (v) => v?.montoPorDia ?? 0.0,
-            applyValue: (v, value) => Rental(
-              id: v?.id ?? initial?.id ?? 0,
-              empleado: v?.empleado ?? initial?.empleado ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              fechaRenta: v?.fechaRenta ?? initial?.fechaRenta ?? DateTime.now(),
-              fechaDevolucion: v?.fechaDevolucion ?? initial?.fechaDevolucion,
-              montoPorDia: (() {
+            getValue: (v) => v?.montoDia ?? 0.0,
+            applyValue: (v, value) => RentalForm(
+              noRenta: v?.noRenta ?? initial?.noRenta,
+              empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
+              vehiculoId: v?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : 0),
+              clienteId: v?.clienteId ?? (initial != null ? RentalForm.fromRental(initial).clienteId : 0),
+              fechaRenta: v?.fechaRenta ?? (initial != null ? RentalForm.fromRental(initial).fechaRenta : DateTime.now()),
+              fechaDevolucion: v?.fechaDevolucion ?? (initial != null ? RentalForm.fromRental(initial).fechaDevolucion : null),
+              montoDia: (() {
                 if (value is double) return value;
                 if (value is int) return value.toDouble();
                 if (value is String) return double.tryParse(value) ?? 0.0;
-                return v?.montoPorDia ?? initial?.montoPorDia ?? 0.0;
+                return v?.montoDia ?? initial?.montoDia ?? 0.0;
               })(),
-              cantidadDias: v?.cantidadDias ?? initial?.cantidadDias ?? 1,
-              comentario: v?.comentario ?? initial?.comentario ?? '',
-              estado: v?.estado ?? initial?.estado ?? true,
+              cantidadDias: v?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
+              comentario: v?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
+              estado: v?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA),
             ),
           ),
-          FormFieldDefinition<Rental>(
+          FormFieldDefinition<RentalForm>(
             key: 'cantidadDias',
             label: 'Cantidad de días',
             fieldType: 'number',
@@ -291,37 +322,37 @@ class _RentalScreenState extends State<RentalScreen> {
             ),
             getValue: (v) => v?.cantidadDias ?? 1,
             inputFormatters: InputFormatters.digitsOnly(),
-            applyValue: (v, value) => Rental(
-              id: v?.id ?? initial?.id ?? 0,
-              empleado: v?.empleado ?? initial?.empleado ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              fechaRenta: v?.fechaRenta ?? initial?.fechaRenta ?? DateTime.now(),
-              fechaDevolucion: v?.fechaDevolucion ?? initial?.fechaDevolucion,
-              montoPorDia: v?.montoPorDia ?? initial?.montoPorDia ?? 0.0,
+            applyValue: (v, value) => RentalForm(
+              noRenta: v?.noRenta ?? initial?.noRenta,
+              empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
+              vehiculoId: v?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : 0),
+              clienteId: v?.clienteId ?? (initial != null ? RentalForm.fromRental(initial).clienteId : 0),
+              fechaRenta: v?.fechaRenta ?? (initial != null ? RentalForm.fromRental(initial).fechaRenta : DateTime.now()),
+              fechaDevolucion: v?.fechaDevolucion ?? (initial != null ? RentalForm.fromRental(initial).fechaDevolucion : null),
+              montoDia: v?.montoDia ?? (initial != null ? RentalForm.fromRental(initial).montoDia : 0.0),
               cantidadDias: value as int,
-              comentario: v?.comentario ?? initial?.comentario ?? '',
-              estado: v?.estado ?? initial?.estado ?? true,
+              comentario: v?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
+              estado: v?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA),
             ),
           ),
-          FormFieldDefinition<Rental>(
+          FormFieldDefinition<RentalForm>(
             key: 'comentario',
             label: 'Comentario',
             getValue: (v) => v?.comentario ?? '',
-            applyValue: (v, value) => Rental(
-              id: v?.id ?? initial?.id ?? 0,
-              empleado: v?.empleado ?? initial?.empleado ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              fechaRenta: v?.fechaRenta ?? initial?.fechaRenta ?? DateTime.now(),
-              fechaDevolucion: v?.fechaDevolucion ?? initial?.fechaDevolucion,
-              montoPorDia: v?.montoPorDia ?? initial?.montoPorDia ?? 0.0,
-              cantidadDias: v?.cantidadDias ?? initial?.cantidadDias ?? 1,
+            applyValue: (v, value) => RentalForm(
+              noRenta: v?.noRenta ?? initial?.noRenta,
+              empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
+              vehiculoId: v?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : 0),
+              clienteId: v?.clienteId ?? (initial != null ? RentalForm.fromRental(initial).clienteId : 0),
+              fechaRenta: v?.fechaRenta ?? (initial != null ? RentalForm.fromRental(initial).fechaRenta : DateTime.now()),
+              fechaDevolucion: v?.fechaDevolucion ?? (initial != null ? RentalForm.fromRental(initial).fechaDevolucion : null),
+              montoDia: v?.montoDia ?? (initial != null ? RentalForm.fromRental(initial).montoDia : 0.0),
+              cantidadDias: v?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
               comentario: value as String,
-              estado: v?.estado ?? initial?.estado ?? true,
+              estado: v?.estado ?? (initial != null ? RentalForm.fromRental(initial).estado : EstadoRenta.ACTIVA),
             ),
           ),
-          FormFieldDefinition<Rental>(
+          FormFieldDefinition<RentalForm>(
             key: 'estado',
             label: 'Estado',
             fieldType: 'dropdown',
@@ -329,18 +360,18 @@ class _RentalScreenState extends State<RentalScreen> {
               {'value': true, 'label': 'Activo'},
               {'value': false, 'label': 'Inactivo'},
             ],
-            getValue: (v) => v?.estado ?? true,
-            applyValue: (v, value) => Rental(
-              id: v?.id ?? initial?.id ?? 0,
-              empleado: v?.empleado ?? initial?.empleado ?? 0,
-              vehiculo: v?.vehiculo ?? initial?.vehiculo ?? 0,
-              cliente: v?.cliente ?? initial?.cliente ?? 0,
-              fechaRenta: v?.fechaRenta ?? initial?.fechaRenta ?? DateTime.now(),
-              fechaDevolucion: v?.fechaDevolucion ?? initial?.fechaDevolucion,
-              montoPorDia: v?.montoPorDia ?? initial?.montoPorDia ?? 0.0,
-              cantidadDias: v?.cantidadDias ?? initial?.cantidadDias ?? 1,
-              comentario: v?.comentario ?? initial?.comentario ?? '',
-              estado: value as bool,
+            getValue: (v) => v?.estado == EstadoRenta.ACTIVA,
+            applyValue: (v, value) => RentalForm(
+              noRenta: v?.noRenta ?? initial?.noRenta,
+              empleadoId: v?.empleadoId ?? (initial != null ? RentalForm.fromRental(initial).empleadoId : 0),
+              vehiculoId: v?.vehiculoId ?? (initial != null ? RentalForm.fromRental(initial).vehiculoId : 0),
+              clienteId: v?.clienteId ?? (initial != null ? RentalForm.fromRental(initial).clienteId : 0),
+              fechaRenta: v?.fechaRenta ?? (initial != null ? RentalForm.fromRental(initial).fechaRenta : DateTime.now()),
+              fechaDevolucion: v?.fechaDevolucion ?? (initial != null ? RentalForm.fromRental(initial).fechaDevolucion : null),
+              montoDia: v?.montoDia ?? (initial != null ? RentalForm.fromRental(initial).montoDia : 0.0),
+              cantidadDias: v?.cantidadDias ?? (initial != null ? RentalForm.fromRental(initial).cantidadDias : 1),
+              comentario: v?.comentario ?? (initial != null ? RentalForm.fromRental(initial).comentario : ''),
+              estado: (value as bool) ? EstadoRenta.ACTIVA : EstadoRenta.DEVUELTA,
             ),
           ),
         ],
@@ -351,6 +382,9 @@ class _RentalScreenState extends State<RentalScreen> {
   CollectionItemData _buildRentalItem(
     BuildContext context,
     Rental renta,
+    String vehicleName,
+    String clientName,
+    String employeeName,
   ) {
     final isDevuelto = renta.esDevuelto;
     final montoTotal = renta.montoTotal;
@@ -358,13 +392,13 @@ class _RentalScreenState extends State<RentalScreen> {
     return CollectionItemData(
       header: CollectionHeaderData(
         title: isDevuelto ? 'Renta devuelta' : 'Renta activa',
-        subtitle: 'No. ${renta.id}',
+        subtitle: 'No. ${renta.noRenta}',
         backgroundColor: AppColors.primary.withOpacity(0.05),
         leadingIcon: Icons.car_rental_outlined,
       ),
-      badge: CollectionBadgeData(text: 'R${renta.id}'),
-      title: 'Renta #${renta.id}',
-      subtitle: 'Cliente: ${renta.cliente} " Vehículo: ${renta.vehiculo}',
+      badge: CollectionBadgeData(text: 'R${renta.noRenta}'),
+      title: 'Renta #${renta.noRenta}',
+      subtitle: 'Cliente: $clientName • Vehículo: $vehicleName',
       statusChip: CollectionStatusChip(
         label: isDevuelto ? 'Devuelto' : 'En curso',
         backgroundColor: isDevuelto ? AppColors.info.withOpacity(0.16) : AppColors.warning.withOpacity(0.16),
@@ -373,32 +407,32 @@ class _RentalScreenState extends State<RentalScreen> {
       details: [
         CollectionDetailInfo(
           label: 'No. Renta',
-          value: '#${renta.id}',
-          inlineValue: 'No. ${renta.id}',
+          value: '#${renta.noRenta}',
+          inlineValue: 'No. ${renta.noRenta}',
           icon: Icons.confirmation_number_outlined,
           iconColor: AppColors.info,
           iconBackground: AppColors.info.withOpacity(0.16),
         ),
         CollectionDetailInfo(
           label: 'Cliente',
-          value: 'ID ${renta.cliente}',
-          inlineValue: 'Cliente: ${renta.cliente}',
+          value: clientName,
+          inlineValue: 'Cliente: $clientName',
           icon: Icons.person_outlined,
           iconColor: AppColors.primary,
           iconBackground: AppColors.primary.withOpacity(0.15),
         ),
         CollectionDetailInfo(
           label: 'Vehículo',
-          value: 'ID ${renta.vehiculo}',
-          inlineValue: 'Vehículo: ${renta.vehiculo}',
+          value: vehicleName,
+          inlineValue: 'Vehículo: $vehicleName',
           icon: Icons.directions_car_outlined,
           iconColor: AppColors.secondary,
           iconBackground: AppColors.secondary.withOpacity(0.16),
         ),
         CollectionDetailInfo(
           label: 'Empleado',
-          value: 'ID ${renta.empleado}',
-          inlineValue: 'Empleado: ${renta.empleado}',
+          value: employeeName,
+          inlineValue: 'Empleado: $employeeName',
           icon: Icons.badge_outlined,
           iconColor: AppColors.info,
           iconBackground: AppColors.info.withOpacity(0.14),
@@ -422,8 +456,8 @@ class _RentalScreenState extends State<RentalScreen> {
           ),
         CollectionDetailInfo(
           label: 'Monto por día',
-          value: InputFormatters.formatCurrency(renta.montoPorDia),
-          inlineValue: '${InputFormatters.formatCurrency(renta.montoPorDia)}/día',
+          value: InputFormatters.formatCurrency(renta.montoDia),
+          inlineValue: '${InputFormatters.formatCurrency(renta.montoDia)}/día',
           icon: Icons.attach_money_outlined,
           iconColor: AppColors.warning,
           iconBackground: AppColors.warning.withOpacity(0.18),
@@ -463,7 +497,7 @@ class _RentalScreenState extends State<RentalScreen> {
           label: 'Eliminar',
           icon: Icons.delete_outline,
           variant: CollectionActionVariant.danger,
-          onPressed: () => context.read<RentalProvider>().eliminarRenta(renta.id),
+          onPressed: () => context.read<RentalProvider>().eliminarRenta(renta.noRenta!),
         ),
       ],
       footerStatus: CollectionFooterStatus(
@@ -476,13 +510,13 @@ class _RentalScreenState extends State<RentalScreen> {
 
   Future<void> _devolverRenta(BuildContext context, Rental renta) async {
     final rentaDevuelta = Rental(
-      id: renta.id,
+      noRenta: renta.noRenta,
       empleado: renta.empleado,
       vehiculo: renta.vehiculo,
       cliente: renta.cliente,
       fechaRenta: renta.fechaRenta,
       fechaDevolucion: DateTime.now(),
-      montoPorDia: renta.montoPorDia,
+      montoDia: renta.montoDia,
       cantidadDias: renta.cantidadDias,
       comentario: renta.comentario,
       estado: renta.estado,

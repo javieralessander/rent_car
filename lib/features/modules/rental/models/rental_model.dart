@@ -68,9 +68,9 @@ class Rental {
   Map<String, dynamic> toJson() {
     return {
       if (noRenta != null) 'noRenta': noRenta,
-      'empleado': empleado?.toJson(),
-      'vehiculo': vehiculo?.toJson(),
-      'cliente': cliente?.toJson(),
+      'empleado': empleado != null ? {'id': empleado!.id} : null,
+      'vehiculo': vehiculo != null ? {'id': vehiculo!.id} : null,
+      'cliente': cliente != null ? {'id': cliente!.id} : null,
       'fechaRenta': fechaRenta.toIso8601String().split('T')[0],
       'fechaDevolucion': fechaDevolucion?.toIso8601String().split('T')[0],
       'montoDia': montoDia,

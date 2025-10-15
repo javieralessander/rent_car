@@ -100,13 +100,18 @@ class InspectionProvider extends ChangeNotifier {
     _actualizarPagina();
   }
 
-  Future<void> agregarInspeccion(Inspection inspeccion) async {
+  Future<bool> agregarInspeccion(Inspection inspeccion) async {
+    _error = null;
     try {
       final nueva = await InspectionService.create(inspeccion);
       _todos.add(nueva);
       _actualizarPagina();
+      return true;
     } catch (e) {
       debugPrint('Error al agregar inspección: $e');
+      _error = 'Error al crear inspección: $e';
+      notifyListeners();
+      return false;
     }
   }
 

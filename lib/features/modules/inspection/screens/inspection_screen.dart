@@ -223,7 +223,9 @@ class _InspectionScreenState extends State<InspectionScreen> {
             key: 'cantidadCombustible',
             label: 'Cantidad de Combustible',
             fieldType: 'dropdown',
-            getValue: (inspection) => inspection?.cantidadCombustible,
+            getValue: (inspection) => inspection?.cantidadCombustible != null
+                ? Inspection.cantidadCombustibleToEnum(inspection!.cantidadCombustible)
+                : null,
             applyValue: (inspection, value) => inspection,
             options: const [
               {'value': CantidadCombustible.unCuarto, 'label': '1/4'},
@@ -578,7 +580,9 @@ class _InspectionScreenState extends State<InspectionScreen> {
       vehiculo: _extractInt(values['vehiculo'], initial?.vehiculo ?? 0, 'vehiculo'),
       cliente: _extractInt(values['cliente'], initial?.cliente ?? 0, 'cliente'),
       tieneRalladuras: (values['tieneRalladuras'] as bool?) ?? initial?.tieneRalladuras ?? false,
-      cantidadCombustible: (values['cantidadCombustible'] as CantidadCombustible?) ?? initial?.cantidadCombustible ?? CantidadCombustible.unCuarto,
+      cantidadCombustible: values['cantidadCombustible'] != null
+          ? Inspection.cantidadCombustibleFromEnum(values['cantidadCombustible'] as CantidadCombustible)
+          : initial?.cantidadCombustible ?? 0.25,
       tieneGomaRespuesta: (values['tieneGomaRespuesta'] as bool?) ?? initial?.tieneGomaRespuesta ?? false,
       tieneGato: (values['tieneGato'] as bool?) ?? initial?.tieneGato ?? false,
       tieneRoturasCristal: (values['tieneRoturasCristal'] as bool?) ?? initial?.tieneRoturasCristal ?? false,

@@ -12,6 +12,13 @@ class FuelTypeService {
     );
   }
 
+  static Future<FuelType?> getById(int id) async {
+    return await _client.get<FuelType>(
+      '/tipos-combustibles/$id',
+      (e) => FuelType.fromJson(e as Map<String, dynamic>),
+    );
+  }
+
   static Future<FuelType> create(FuelType tipoCombustible) async {
     return await _client.post<FuelType>(
       '/tipos-combustibles',
@@ -21,12 +28,12 @@ class FuelTypeService {
   }
 
   static Future<void> delete(int id) async {
-    await _client.delete('/tipos-combustible/$id');
+    await _client.delete('/tipos-combustibles/$id');
   }
 
   static Future<FuelType> update(FuelType tipoCombustible) async {
     return await _client.put<FuelType>(
-      '/tipos-combustible/${tipoCombustible.id}',
+      '/tipos-combustibles/${tipoCombustible.id}',
       tipoCombustible.toJson(),
       (e) => FuelType.fromJson(e as Map<String, dynamic>),
     );

@@ -57,10 +57,10 @@ class Vehicle {
       'noChasis': noChasis,
       'noMotor': noMotor,
       'noPlaca': noPlaca,
-      'tipoVehiculo': tipoVehiculo?.toJson(),
-      'marca': marca?.toJson(),
-      'modelo': modelo?.toJson(),
-      'tipoCombustible': tipoCombustible?.toJson(),
+      'tipoVehiculo': tipoVehiculo != null ? {'id': tipoVehiculo!.id} : null,
+      'marca': marca != null ? {'id': marca!.id} : null,
+      'modelo': modelo != null ? {'id': modelo!.id} : null,
+      'tipoCombustible': tipoCombustible != null ? {'id': tipoCombustible!.id} : null,
       'estado': estado,
     };
   }

@@ -360,6 +360,21 @@ class InputValidators {
     return null;
   }
 
+  static String? dateAfterOrEqual(
+    DateTime? targetDate,
+    DateTime? referenceDate, {
+    String targetFieldName = 'Fecha',
+    String referenceFieldName = 'fecha de referencia',
+  }) {
+    if (targetDate == null || referenceDate == null) return null;
+
+    if (targetDate.isBefore(referenceDate)) {
+      return '$targetFieldName no puede ser anterior a la $referenceFieldName';
+    }
+
+    return null;
+  }
+
   static String? requiredNumber(
     String? value, {
     String fieldName = 'Campo',

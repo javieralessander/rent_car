@@ -116,29 +116,43 @@ class _RentalScreenState extends State<RentalScreen> {
         title: initial == null ? 'Nueva Renta' : 'Editar Renta',
         initialData: initial != null ? RentalForm.fromRental(initial) : null,
         onSubmit: (rentalForm) async {
-          // Convertir RentalForm a Rental completo
-          final empleado = employeeProvider.todosEmpleados.firstWhere(
-            (e) => e.id == rentalForm.empleadoId,
-            orElse: () => employeeProvider.todosEmpleados.first,
-          );
-          final vehiculo = vehicleProvider.todosVehiculos.firstWhere(
-            (v) => v.id == rentalForm.vehiculoId,
-            orElse: () => vehicleProvider.todosVehiculos.first,
-          );
-          final cliente = clientProvider.todosClientes.firstWhere(
-            (c) => c.id == rentalForm.clienteId,
-            orElse: () => clientProvider.todosClientes.first,
-          );
-
-          final rental = rentalForm.toRental(
-            empleado: empleado,
-            vehiculo: vehiculo,
-            cliente: cliente,
-          );
+          // Validación cross-field antes de enviar
+          if (rentalForm.fechaDevolucion != null) {
+            final error = InputValidators.dateAfterOrEqual(
+              rentalForm.fechaDevolucion,
+              rentalForm.fechaRenta,
+              targetFieldName: 'Fecha de devolución',
+              referenceFieldName: 'fecha de renta',
+            );
+            if (error != null) {
+              throw Exception(error);
+            }
+          }
 
           if (initial == null) {
-            await context.read<RentalProvider>().agregarRenta(rental);
+            // Para crear: usar el método optimizado que envía solo IDs
+            await context.read<RentalProvider>().agregarRentaFromForm(rentalForm);
           } else {
+            // Para actualizar: construir Rental completo como antes
+            final empleado = employeeProvider.todosEmpleados.firstWhere(
+              (e) => e.id == rentalForm.empleadoId,
+              orElse: () => employeeProvider.todosEmpleados.first,
+            );
+            final vehiculo = vehicleProvider.todosVehiculos.firstWhere(
+              (v) => v.id == rentalForm.vehiculoId,
+              orElse: () => vehicleProvider.todosVehiculos.first,
+            );
+            final cliente = clientProvider.todosClientes.firstWhere(
+              (c) => c.id == rentalForm.clienteId,
+              orElse: () => clientProvider.todosClientes.first,
+            );
+
+            final rental = rentalForm.toRental(
+              empleado: empleado,
+              vehiculo: vehiculo,
+              cliente: cliente,
+            );
+
             await context.read<RentalProvider>().actualizarRenta(rental);
           }
         },
@@ -254,9 +268,7 @@ class _RentalScreenState extends State<RentalScreen> {
             getValue: (v) => v?.fechaRenta,
             validator: (value) {
               if (value == null) return 'La fecha de renta es requerida';
-              if (value is DateTime && value.isAfter(DateTime.now())) {
-                return 'La fecha de renta no puede ser futura';
-              }
+              // Permitir fechas futuras para rentas
               return null;
             },
             applyValue: (v, value) => RentalForm(
@@ -275,7 +287,52 @@ class _RentalScreenState extends State<RentalScreen> {
           FormFieldDefinition<RentalForm>(
             key: 'fechaDevolucion',
             label: 'Fecha de devolución',
-            fieldType: 'date',
+            fieldType: 'custom',
+            builder: (context, controller, initialData, formValues) {
+              // Validación cross-field que se evalúa en cada rebuild
+              final currentDate = controller.value as DateTime?;
+              final fechaRenta = formValues?['fechaRenta'] as DateTime?;
+              String? errorMessage;
+
+              if (currentDate != null && fechaRenta != null) {
+                errorMessage = InputValidators.dateAfterOrEqual(
+                  currentDate,
+                  fechaRenta,
+                  targetFieldName: 'Fecha de devolución',
+                  referenceFieldName: 'fecha de renta',
+                );
+              }
+
+              return TextFormField(
+                key: Key('fechaDevolucion_${fechaRenta?.millisecondsSinceEpoch}_${currentDate?.millisecondsSinceEpoch}'),
+                decoration: InputDecoration(
+                  labelText: 'Fecha de devolución',
+                  suffixIcon: const Icon(Icons.calendar_today),
+                  errorText: errorMessage,
+                ),
+                readOnly: true,
+                controller: TextEditingController(
+                  text: controller.value != null
+                    ? '${(controller.value as DateTime).year.toString().padLeft(4, '0')}-${(controller.value as DateTime).month.toString().padLeft(2, '0')}-${(controller.value as DateTime).day.toString().padLeft(2, '0')}'
+                    : '',
+                ),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: controller.value as DateTime? ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                  );
+                  if (date != null) {
+                    controller.setValue(date);
+                  }
+                },
+                validator: (value) {
+                  // Solo para validación de formulario, no mostramos mensaje aquí
+                  return null;
+                },
+              );
+            },
             getValue: (v) => v?.fechaDevolucion,
             applyValue: (v, value) => RentalForm(
               noRenta: v?.noRenta ?? initial?.noRenta,
@@ -297,6 +354,7 @@ class _RentalScreenState extends State<RentalScreen> {
             textValidator: (value) => InputValidators.requiredDecimal(
               value,
               fieldName: 'Monto por día',
+              minValue: 0.01,
             ),
             getValue: (v) => v?.montoDia,
             applyValue: (v, value) => RentalForm(
@@ -324,6 +382,7 @@ class _RentalScreenState extends State<RentalScreen> {
             textValidator: (value) => InputValidators.requiredNumber(
               value,
               fieldName: 'Cantidad de días',
+              minValue: 1,
             ),
             getValue: (v) => v?.cantidadDias,
             inputFormatters: InputFormatters.digitsOnly(),

@@ -198,10 +198,10 @@ class _ModelScreenState extends State<ModelScreen> {
         textValidator:
             (value) =>
                 InputValidators.requiredText(value, fieldName: 'Descripción'),
-        inputFormatters: InputFormatters.alphaNumeric(
-          allowSpaces: true,
-          maxLength: 50,
-        ),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\s]')),
+          LengthLimitingTextInputFormatter(50),
+        ],
         textCapitalization: TextCapitalization.words,
         getValue: (v) => v?.descripcion ?? '',
         applyValue:

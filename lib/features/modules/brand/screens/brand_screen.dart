@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/config/app_theme.dart';
@@ -113,10 +114,10 @@ class _BrandScreenState extends State<BrandScreen> {
                       value,
                       fieldName: 'Descripción',
                     ),
-                inputFormatters: InputFormatters.alphaNumeric(
-                  maxLength: 40,
-                  allowSpaces: true,
-                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\s]')),
+                  LengthLimitingTextInputFormatter(40),
+                ],
                 textCapitalization: TextCapitalization.words,
                 getValue: (b) => b?.descripcion ?? '',
                 applyValue:

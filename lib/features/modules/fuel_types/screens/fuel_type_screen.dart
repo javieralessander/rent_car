@@ -124,10 +124,10 @@ class _FuelTypeScreenState extends State<FuelTypeScreen> {
                       value,
                       fieldName: 'Descripción',
                     ),
-                inputFormatters: InputFormatters.alphaNumeric(
-                  maxLength: 40,
-                  allowSpaces: true,
-                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\s]')),
+                  LengthLimitingTextInputFormatter(40),
+                ],
                 textCapitalization: TextCapitalization.words,
                 getValue: (v) => v?.descripcion ?? '',
                 applyValue:

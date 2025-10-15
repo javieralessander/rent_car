@@ -48,6 +48,7 @@ class Employee {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'nombre': nombre,
       'cedula': cedula,
       'tandaLabor': tandaLabor.toString().split('.').last,

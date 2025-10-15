@@ -12,6 +12,13 @@ class VehicleTypeService {
     );
   }
 
+  static Future<VehicleType?> getById(int id) async {
+    return await _client.get<VehicleType>(
+      '/tipos-vehiculos/$id',
+      (e) => VehicleType.fromJson(e as Map<String, dynamic>),
+    );
+  }
+
   static Future<VehicleType> create(VehicleType tipoVehiculo) async {
     return await _client.post<VehicleType>(
       '/tipos-vehiculos',

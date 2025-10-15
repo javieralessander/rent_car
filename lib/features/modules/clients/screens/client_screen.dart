@@ -269,7 +269,7 @@ class _ClientScreenState extends State<ClientScreen> {
         CollectionDetailInfo(
           label: 'Cédula',
           value: cliente.cedula,
-          inlineValue: 'Cédula: ${cliente.cedula}',
+          inlineValue: cliente.cedula,
           icon: Icons.credit_card_outlined,
         ),
         CollectionDetailInfo(
@@ -281,20 +281,8 @@ class _ClientScreenState extends State<ClientScreen> {
         CollectionDetailInfo(
           label: 'Límite Crédito',
           value: InputFormatters.formatCurrency(cliente.limiteCredito),
-          inlineValue: 'Límite: ${InputFormatters.formatCurrency(cliente.limiteCredito)}',
+          inlineValue: InputFormatters.formatCurrency(cliente.limiteCredito),
           icon: Icons.account_balance_wallet_outlined,
-        ),
-        CollectionDetailInfo(
-          label: 'Tarjeta CR',
-          value: cliente.noTarjetaCr,
-          inlineValue: 'Tarjeta: ${cliente.noTarjetaCr}',
-          icon: Icons.credit_card,
-        ),
-        CollectionDetailInfo(
-          label: 'Estado',
-          value: isActive ? 'Activo' : 'Inactivo',
-          inlineValue: isActive ? 'Activo' : 'Inactivo',
-          icon: isActive ? Icons.check_circle_outline : Icons.pause_circle_outline,
         ),
       ],
       actions: [

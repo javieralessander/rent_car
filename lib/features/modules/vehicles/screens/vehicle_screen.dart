@@ -225,10 +225,10 @@ class _VehicleScreenState extends State<VehicleScreen> {
         textValidator:
             (value) =>
                 InputValidators.requiredText(value, fieldName: 'Descripción'),
-        inputFormatters: InputFormatters.alphaNumeric(
-          maxLength: 60,
-          allowSpaces: true,
-        ),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\s-]')),
+          LengthLimitingTextInputFormatter(60),
+        ],
         textCapitalization: TextCapitalization.sentences,
         getValue: (v) => v?.descripcion ?? '',
         applyValue:
@@ -255,7 +255,10 @@ class _VehicleScreenState extends State<VehicleScreen> {
               minLength: 5,
               maxLength: 10,
             ),
-        inputFormatters: InputFormatters.plate(maxLength: 10),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
+          LengthLimitingTextInputFormatter(10),
+        ],
         textCapitalization: TextCapitalization.characters,
         getValue: (v) => v?.noPlaca ?? '',
         applyValue:
@@ -282,7 +285,10 @@ class _VehicleScreenState extends State<VehicleScreen> {
               minLength: 6,
               maxLength: 25,
             ),
-        inputFormatters: InputFormatters.alphaNumeric(maxLength: 25),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
+          LengthLimitingTextInputFormatter(25),
+        ],
         textCapitalization: TextCapitalization.characters,
         getValue: (v) => v?.noChasis ?? '',
         applyValue:
@@ -309,7 +315,10 @@ class _VehicleScreenState extends State<VehicleScreen> {
               minLength: 4,
               maxLength: 25,
             ),
-        inputFormatters: InputFormatters.alphaNumeric(maxLength: 25),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
+          LengthLimitingTextInputFormatter(25),
+        ],
         textCapitalization: TextCapitalization.characters,
         getValue: (v) => v?.noMotor ?? '',
         applyValue:
@@ -523,18 +532,10 @@ class _VehicleScreenState extends State<VehicleScreen> {
         CollectionDetailInfo(
           label: 'Chasis',
           value: vehicle.noChasis,
-          inlineValue: '',
+          inlineValue: vehicle.noChasis.length > 15 ? '${vehicle.noChasis.substring(0, 15)}...' : vehicle.noChasis,
           icon: Icons.confirmation_num_outlined,
           iconColor: AppColors.info,
           iconBackground: AppColors.info.withOpacity(0.16),
-        ),
-        CollectionDetailInfo(
-          label: 'Motor',
-          value: vehicle.noMotor,
-          inlineValue: '',
-          icon: Icons.settings_input_component_outlined,
-          iconColor: AppColors.grayDark,
-          iconBackground: AppColors.grayDark.withOpacity(0.12),
         ),
       ],
       actions: [

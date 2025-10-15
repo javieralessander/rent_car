@@ -7,7 +7,7 @@ class Inspection {
   final int vehiculo;
   final int cliente;
   final bool tieneRalladuras;
-  final CantidadCombustible cantidadCombustible;
+  final double cantidadCombustible;
   final bool tieneGomaRespuesta;
   final bool tieneGato;
   final bool tieneRoturasCristal;
@@ -40,54 +40,84 @@ class Inspection {
   factory Inspection.fromJson(Map<String, dynamic> json) {
     return Inspection(
       id: int.parse(json['id'].toString()),
-      vehiculo: int.parse(json['vehiculo'].toString()),
-      cliente: int.parse(json['cliente'].toString()),
+      vehiculo: _extractId(json['vehiculo']),
+      cliente: _extractId(json['cliente']),
       tieneRalladuras: json['tieneRalladuras'] ?? false,
-      cantidadCombustible: _parseCantidadCombustible(
-        json['cantidadCombustible'],
-      ),
+      cantidadCombustible: _parseCantidadCombustible(json['cantidadCombustible']),
       tieneGomaRespuesta: json['tieneGomaRespuesta'] ?? false,
       tieneGato: json['tieneGato'] ?? false,
       tieneRoturasCristal: json['tieneRoturasCristal'] ?? false,
-      estadoGoma1: json['estadoGoma1'] ?? false,
-      estadoGoma2: json['estadoGoma2'] ?? false,
-      estadoGoma3: json['estadoGoma3'] ?? false,
-      estadoGoma4: json['estadoGoma4'] ?? false,
+      estadoGoma1: json['estadoGomaDelanteraIzq'] ?? json['estadoGoma1'] ?? false,
+      estadoGoma2: json['estadoGomaDelanteraDer'] ?? json['estadoGoma2'] ?? false,
+      estadoGoma3: json['estadoGomaTraseraIzq'] ?? json['estadoGoma3'] ?? false,
+      estadoGoma4: json['estadoGomaTraseraDer'] ?? json['estadoGoma4'] ?? false,
       fecha: DateTime.parse(json['fecha']),
-      empleadoInspeccion: int.parse(json['empleadoInspeccion'].toString()),
+      empleadoInspeccion: _extractId(json['empleado']),
       estado: json['estado'] ?? true,
     );
   }
 
-  static CantidadCombustible _parseCantidadCombustible(String cantidad) {
-    switch (cantidad.toLowerCase()) {
+  static int _extractId(dynamic obj) {
+    if (obj == null) return 0;
+    if (obj is int) return obj;
+    if (obj is Map<String, dynamic> && obj.containsKey('id')) {
+      return int.parse(obj['id'].toString());
+    }
+    return int.parse(obj.toString());
+  }
+
+  static double _parseCantidadCombustible(dynamic value) {
+    if (value == null) return 0.25;
+
+    String valueStr = value.toString().toLowerCase();
+
+    // Mapear solo texto legible a decimal
+    switch (valueStr) {
       case '1/4':
-      case 'un_cuarto':
-        return CantidadCombustible.unCuarto;
+        return 0.25;
       case '1/2':
-      case 'medio':
-        return CantidadCombustible.medio;
+        return 0.50;
       case '3/4':
-      case 'tres_cuartos':
-        return CantidadCombustible.tresCuartos;
+        return 0.75;
       case 'lleno':
-        return CantidadCombustible.lleno;
+        return 1.00;
       default:
-        return CantidadCombustible.unCuarto;
+        return 0.25; // Default a 1/4
     }
   }
 
-  String get cantidadCombustibleString {
-    switch (cantidadCombustible) {
+  static double cantidadCombustibleFromEnum(CantidadCombustible cantidad) {
+    switch (cantidad) {
       case CantidadCombustible.unCuarto:
-        return '1/4';
+        return 0.25;
       case CantidadCombustible.medio:
-        return '1/2';
+        return 0.50;
       case CantidadCombustible.tresCuartos:
-        return '3/4';
+        return 0.75;
       case CantidadCombustible.lleno:
-        return 'Lleno';
+        return 1.00;
     }
+  }
+
+  static CantidadCombustible cantidadCombustibleToEnum(double valor) {
+    if (valor <= 0.30) return CantidadCombustible.unCuarto;
+    if (valor <= 0.60) return CantidadCombustible.medio;
+    if (valor <= 0.85) return CantidadCombustible.tresCuartos;
+    return CantidadCombustible.lleno;
+  }
+
+  String get cantidadCombustibleString {
+    if (cantidadCombustible <= 0.30) return '1/4';
+    if (cantidadCombustible <= 0.60) return '1/2';
+    if (cantidadCombustible <= 0.85) return '3/4';
+    return 'Lleno';
+  }
+
+  String get cantidadCombustibleDisplay {
+    if (cantidadCombustible <= 0.30) return '1/4';
+    if (cantidadCombustible <= 0.60) return '½';
+    if (cantidadCombustible <= 0.85) return '¾';
+    return 'Lleno';
   }
 
   Map<String, dynamic> toJson() {
@@ -95,7 +125,7 @@ class Inspection {
       'vehiculo': {'id': vehiculo},
       'cliente': {'id': cliente},
       'tieneRalladuras': tieneRalladuras,
-      'cantidadCombustible': cantidadCombustibleString.toUpperCase().replaceAll('/', '_').replaceAll(' ', '_'),
+      'cantidadCombustible': cantidadCombustible,
       'tieneGomaRespuesta': tieneGomaRespuesta,
       'tieneGato': tieneGato,
       'tieneRoturasCristal': tieneRoturasCristal,

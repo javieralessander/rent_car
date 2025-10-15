@@ -1,6 +1,7 @@
 import 'package:rent_car/core/config/env.dart';
 import '../../../../core/config/http_api_client.dart';
 import '../models/rental_model.dart';
+import '../models/rental_form.dart';
 
 class RentalService {
   static final HttpApiClient _client = HttpApiClient(Environment.apiUrl);
@@ -49,6 +50,15 @@ class RentalService {
     return await _client.post<Rental>(
       '/rentas',
       renta.toJson(),
+      (e) => Rental.fromJson(e as Map<String, dynamic>),
+    );
+  }
+
+  // Método alternativo que usa RentalForm directamente
+  static Future<Rental> createFromForm(RentalForm rentalForm) async {
+    return await _client.post<Rental>(
+      '/rentas',
+      rentalForm.toApiJson(),
       (e) => Rental.fromJson(e as Map<String, dynamic>),
     );
   }

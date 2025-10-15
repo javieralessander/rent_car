@@ -375,7 +375,7 @@ class GenericCollectionView extends StatelessWidget {
             final width = constraints.maxWidth;
             int crossAxisCount = 1;
             if (width > 1400) {
-              crossAxisCount = 4;
+              crossAxisCount = 3;
             } else if (width > 1024) {
               crossAxisCount = 3;
             } else if (width > 720) {

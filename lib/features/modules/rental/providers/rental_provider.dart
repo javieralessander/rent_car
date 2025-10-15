@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/rental_model.dart';
+import '../models/rental_form.dart';
 import '../services/rental_service.dart';
 
 class RentalProvider extends ChangeNotifier {
@@ -102,9 +103,7 @@ class RentalProvider extends ChangeNotifier {
 
   Future<void> agregarRenta(Rental renta) async {
     try {
-      if (renta.fechaRenta.isAfter(DateTime.now())) {
-        throw Exception('La fecha de renta no puede ser futura');
-      }
+      // Permitir fechas futuras para rentas
 
       if (renta.cantidadDias <= 0) {
         throw Exception('La cantidad de días debe ser mayor a 0');
@@ -115,6 +114,28 @@ class RentalProvider extends ChangeNotifier {
       }
 
       final nueva = await RentalService.create(renta);
+      _todos.add(nueva);
+      _actualizarPagina();
+    } catch (e) {
+      debugPrint('Error al agregar renta: $e');
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Método optimizado que usa RentalForm directamente
+  Future<void> agregarRentaFromForm(RentalForm rentalForm) async {
+    try {
+      if (rentalForm.cantidadDias <= 0) {
+        throw Exception('La cantidad de días debe ser mayor a 0');
+      }
+
+      if (rentalForm.montoDia <= 0) {
+        throw Exception('El monto por día debe ser mayor a 0');
+      }
+
+      final nueva = await RentalService.createFromForm(rentalForm);
       _todos.add(nueva);
       _actualizarPagina();
     } catch (e) {

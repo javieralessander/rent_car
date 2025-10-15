@@ -26,7 +26,7 @@ class Model {
   Map<String, dynamic> toJson() {
     return {
       if (id != null) 'id': id,
-      'marca': marca?.toJson(),
+      'marca': marca != null ? {'id': marca!.id} : null,
       'descripcion': descripcion,
       'estado': estado,
     };

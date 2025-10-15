@@ -18,7 +18,7 @@ class FuelType {
   }
 
   Map<String, dynamic> toJson() {
-    return {'descripcion': descripcion, 'estado': estado};
+    return {'id': id, 'descripcion': descripcion, 'estado': estado};
   }
 
   factory FuelType.fromRawJson(String str) =>

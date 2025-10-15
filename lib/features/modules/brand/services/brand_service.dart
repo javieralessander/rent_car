@@ -12,6 +12,13 @@ class BrandService {
     );
   }
 
+  static Future<Brand?> getById(int id) async {
+    return await _client.get<Brand>(
+      '/marcas/$id',
+      (e) => Brand.fromJson(e as Map<String, dynamic>),
+    );
+  }
+
   static Future<Brand> create(Brand marca) async {
     return await _client.post<Brand>(
       '/marcas',

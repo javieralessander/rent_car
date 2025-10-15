@@ -12,6 +12,13 @@ class InspectionService {
     );
   }
 
+  static Future<Inspection?> getById(int id) async {
+    return await _client.get<Inspection>(
+      '/inspecciones/$id',
+      (e) => Inspection.fromJson(e as Map<String, dynamic>),
+    );
+  }
+
   static Future<Inspection> create(Inspection inspeccion) async {
     return await _client.post<Inspection>(
       '/inspecciones',

@@ -39,7 +39,13 @@ class _GenericFormDialogState<T> extends State<GenericFormDialog<T>> {
   void initState() {
     super.initState();
     for (var field in widget.fields) {
-      _formValues[field.key] = field.getValue(widget.initialData);
+      final value = field.getValue(widget.initialData);
+      // Para campos boolean, solo pre-inicializar si estamos editando (no creando)
+      if (field.fieldType == 'boolean' && widget.initialData == null) {
+        _formValues[field.key] = null; // No pre-inicializar en crear nuevo
+      } else {
+        _formValues[field.key] = value;
+      }
     }
   }
 
@@ -196,6 +202,31 @@ class FormFieldDefinition<T> {
       );
     }
     switch (fieldType) {
+      case 'boolean':
+        // Dropdown específico para campos boolean que muestra Sí/No
+        return DropdownButtonFormField<bool>(
+          value: value is bool ? value : null,
+          decoration: InputDecoration(labelText: label),
+          items: const [
+            DropdownMenuItem<bool>(
+              value: false,
+              child: Text('No'),
+            ),
+            DropdownMenuItem<bool>(
+              value: true,
+              child: Text('Sí'),
+            ),
+          ],
+          onChanged: (bool? newValue) {
+            onChanged(newValue);
+          },
+          validator: (bool? value) {
+            if (validator != null) {
+              return validator!(value);
+            }
+            return null;
+          },
+        );
       case 'dropdown':
         // Create dropdown items and remove duplicates
         final dropdownItems = <DropdownMenuItem<dynamic>>[];

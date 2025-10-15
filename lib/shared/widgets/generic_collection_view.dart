@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/config/app_theme.dart';
+import 'empty_state_widget.dart';
 
 enum CollectionViewMode { list, grid }
 
@@ -349,17 +350,7 @@ class GenericCollectionView extends StatelessWidget {
     required bool isTablet,
   }) {
     if (items.isEmpty) {
-      return emptyBuilder ??
-          Column(
-            children: const [
-              Icon(Icons.inbox_outlined, size: 48, color: AppColors.gray),
-              SizedBox(height: 12),
-              Text(
-                'No hay registros para mostrar.',
-                style: TextStyle(color: AppColors.gray),
-              ),
-            ],
-          );
+      return emptyBuilder ?? _getDefaultEmptyState();
     }
 
     switch (viewMode) {
@@ -536,6 +527,39 @@ class GenericCollectionView extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Widget _getDefaultEmptyState() {
+    // Determinar el tipo de entidad basado en el título
+    final titleLower = title.toLowerCase();
+
+    if (titleLower.contains('modelo')) {
+      return EmptyStateConfig.forModels();
+    } else if (titleLower.contains('vehículo') || titleLower.contains('vehiculo')) {
+      return EmptyStateConfig.forVehicles();
+    } else if (titleLower.contains('cliente')) {
+      return EmptyStateConfig.forClients();
+    } else if (titleLower.contains('renta')) {
+      return EmptyStateConfig.forRentals();
+    } else if (titleLower.contains('empleado')) {
+      return EmptyStateConfig.forEmployees();
+    } else if (titleLower.contains('marca')) {
+      return EmptyStateConfig.forBrands();
+    } else if (titleLower.contains('inspección') || titleLower.contains('inspeccion')) {
+      return EmptyStateConfig.forInspections();
+    } else if (titleLower.contains('tipo') && titleLower.contains('vehículo')) {
+      return EmptyStateConfig.forVehicleTypes();
+    } else if (titleLower.contains('combustible')) {
+      return EmptyStateConfig.forFuelTypes();
+    } else {
+      // Estado vacío genérico
+      return const EmptyStateWidget(
+        icon: Icons.folder_open_outlined,
+        title: 'No hay registros',
+        description: 'No se encontraron registros para mostrar.\nPuede agregar nuevos elementos cuando esté listo.',
+        backgroundColor: AppColors.info,
+      );
+    }
   }
 }
 
@@ -898,6 +922,7 @@ class _CollectionGridCard extends StatelessWidget {
                     }
 
                     return Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
@@ -909,6 +934,7 @@ class _CollectionGridCard extends StatelessWidget {
                             ],
                             Expanded(
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(

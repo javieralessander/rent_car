@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/config/app_theme.dart';
 
@@ -9,13 +8,13 @@ class PieChartSectionModel {
   final double value;
   final String title;
   final Color color;
-  final String svgAsset;
+  final IconData iconData;
 
   PieChartSectionModel({
     required this.value,
     required this.title,
     required this.color,
-    required this.svgAsset,
+    required this.iconData,
   });
 }
 
@@ -85,7 +84,7 @@ class _PieChartCustomState extends State<PieChartCustom> {
           shadows: shadows,
         ),
         badgeWidget: _Badge(
-          section.svgAsset,
+          section.iconData,
           size: widgetSize,
           borderColor: AppColors.contentColorBlack,
         ),
@@ -96,8 +95,8 @@ class _PieChartCustomState extends State<PieChartCustom> {
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge(this.svgAsset, {required this.size, required this.borderColor});
-  final String svgAsset;
+  const _Badge(this.iconData, {required this.size, required this.borderColor});
+  final IconData iconData;
   final double size;
   final Color borderColor;
 
@@ -120,7 +119,13 @@ class _Badge extends StatelessWidget {
         ],
       ),
       padding: EdgeInsets.all(size * .15),
-      child: Center(child: SvgPicture.asset(svgAsset)),
+      child: Center(
+        child: Icon(
+          iconData,
+          size: size * 0.5,
+          color: AppColors.contentColorBlack,
+        ),
+      ),
     );
   }
 }

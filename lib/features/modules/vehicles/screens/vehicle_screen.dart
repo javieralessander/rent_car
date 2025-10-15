@@ -10,6 +10,7 @@ import '../../../../shared/utils/input_validators.dart';
 import '../../brand/providers/brand_provider.dart';
 import '../../fuel_types/providers/fuel_type_provider.dart';
 import '../../models/providers/model_provider.dart';
+import '../../models/models/model_model.dart';
 import '../../vehicle_types/providers/vehicle_type_provider.dart';
 import '../models/vehicle_model.dart';
 import '../models/vehicle_form_model.dart';
@@ -141,9 +142,14 @@ class _VehicleScreenState extends State<VehicleScreen> {
     final brandOptions = brandProvider.todasMarcas
         .map((e) => {'value': e.id, 'label': e.descripcion})
         .toList();
-    final modelOptions = modelProvider.todosModelos
-        .map((e) => {'value': e.id, 'label': e.descripcion})
-        .toList();
+    // Para edición, si hay un vehículo inicial, cargar modelos de su marca
+    List<Map<String, Object?>> modelOptions = [];
+    if (initial != null && initial.marca != null) {
+      modelOptions = modelProvider.todosModelos
+          .where((model) => model.marca?.id == initial.marca!.id)
+          .map((e) => {'value': e.id, 'label': e.descripcion})
+          .toList();
+    }
     final fuelOptions = fuelProvider.todosTiposCombustible
         .map((e) => {'value': e.id, 'label': e.descripcion})
         .toList();
@@ -163,10 +169,12 @@ class _VehicleScreenState extends State<VehicleScreen> {
             (b) => b.id == vehicleForm.marcaId,
             orElse: () => brandProvider.todasMarcas.first,
           );
-          final model = modelProvider.todosModelos.firstWhere(
-            (m) => m.id == vehicleForm.modeloId,
-            orElse: () => modelProvider.todosModelos.first,
-          );
+          final model = vehicleForm.modeloId != null
+              ? modelProvider.todosModelos.firstWhere(
+                  (m) => m.id == vehicleForm.modeloId,
+                  orElse: () => modelProvider.todosModelos.first,
+                )
+              : null;
           final fuelType = fuelProvider.todosTiposCombustible.firstWhere(
             (f) => f.id == vehicleForm.tipoCombustibleId,
             orElse: () => fuelProvider.todosTiposCombustible.first,
@@ -193,7 +201,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
           noPlaca: values['noPlaca'] ?? previous?.noPlaca ?? (initial != null ? VehicleForm.fromVehicle(initial).noPlaca : ''),
           tipoVehiculoId: values['tipoVehiculoId'] ?? previous?.tipoVehiculoId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoVehiculoId : typeOptions.first['value'] as int),
           marcaId: values['marcaId'] ?? previous?.marcaId ?? (initial != null ? VehicleForm.fromVehicle(initial).marcaId : brandOptions.first['value'] as int),
-          modeloId: values['modeloId'] ?? previous?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : modelOptions.first['value'] as int),
+          modeloId: values['modeloId'] ?? previous?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : null),
           tipoCombustibleId: values['tipoCombustibleId'] ?? previous?.tipoCombustibleId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoCombustibleId : fuelOptions.first['value'] as int),
           estado: values['estado'] ?? previous?.estado ?? (initial != null ? VehicleForm.fromVehicle(initial).estado : true),
         ),
@@ -203,6 +211,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
           modelOptions: modelOptions,
           fuelOptions: fuelOptions,
           initial: initial,
+          modelProvider: modelProvider,
         ),
       ),
     );
@@ -214,6 +223,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
     required List<Map<String, Object?>> modelOptions,
     required List<Map<String, Object?>> fuelOptions,
     Vehicle? initial,
+    required ModelProvider modelProvider,
   }) {
     int defaultOption(List<Map<String, Object?>> options) =>
         options.first['value'] as int;
@@ -240,7 +250,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
               noPlaca: v?.noPlaca ?? (initial != null ? VehicleForm.fromVehicle(initial).noPlaca : ''),
               tipoVehiculoId: v?.tipoVehiculoId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoVehiculoId : defaultOption(typeOptions)),
               marcaId: v?.marcaId ?? (initial != null ? VehicleForm.fromVehicle(initial).marcaId : defaultOption(brandOptions)),
-              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : defaultOption(modelOptions)),
+              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : null),
               tipoCombustibleId: v?.tipoCombustibleId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoCombustibleId : defaultOption(fuelOptions)),
               estado: v?.estado ?? (initial != null ? VehicleForm.fromVehicle(initial).estado : true),
             ),
@@ -249,16 +259,11 @@ class _VehicleScreenState extends State<VehicleScreen> {
         key: 'noPlaca',
         label: 'Número de placa',
         textValidator:
-            (value) => InputValidators.alphaNumeric(
+            (value) => InputValidators.placaDominicana(
               value,
               fieldName: 'Número de placa',
-              minLength: 5,
-              maxLength: 10,
             ),
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
-          LengthLimitingTextInputFormatter(10),
-        ],
+        inputFormatters: InputFormatters.placaDominicana(),
         textCapitalization: TextCapitalization.characters,
         getValue: (v) => v?.noPlaca ?? '',
         applyValue:
@@ -270,7 +275,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
               noPlaca: value,
               tipoVehiculoId: v?.tipoVehiculoId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoVehiculoId : defaultOption(typeOptions)),
               marcaId: v?.marcaId ?? (initial != null ? VehicleForm.fromVehicle(initial).marcaId : defaultOption(brandOptions)),
-              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : defaultOption(modelOptions)),
+              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : null),
               tipoCombustibleId: v?.tipoCombustibleId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoCombustibleId : defaultOption(fuelOptions)),
               estado: v?.estado ?? (initial != null ? VehicleForm.fromVehicle(initial).estado : true),
             ),
@@ -279,16 +284,11 @@ class _VehicleScreenState extends State<VehicleScreen> {
         key: 'noChasis',
         label: 'Número de chasis',
         textValidator:
-            (value) => InputValidators.alphaNumeric(
+            (value) => InputValidators.numeroChasiVIN(
               value,
               fieldName: 'Número de chasis',
-              minLength: 6,
-              maxLength: 25,
             ),
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
-          LengthLimitingTextInputFormatter(25),
-        ],
+        inputFormatters: InputFormatters.chasisVIN(),
         textCapitalization: TextCapitalization.characters,
         getValue: (v) => v?.noChasis ?? '',
         applyValue:
@@ -300,7 +300,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
               noPlaca: v?.noPlaca ?? (initial != null ? VehicleForm.fromVehicle(initial).noPlaca : ''),
               tipoVehiculoId: v?.tipoVehiculoId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoVehiculoId : defaultOption(typeOptions)),
               marcaId: v?.marcaId ?? (initial != null ? VehicleForm.fromVehicle(initial).marcaId : defaultOption(brandOptions)),
-              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : defaultOption(modelOptions)),
+              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : null),
               tipoCombustibleId: v?.tipoCombustibleId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoCombustibleId : defaultOption(fuelOptions)),
               estado: v?.estado ?? initial?.estado ?? true,
             ),
@@ -309,16 +309,11 @@ class _VehicleScreenState extends State<VehicleScreen> {
         key: 'noMotor',
         label: 'Número de motor',
         textValidator:
-            (value) => InputValidators.alphaNumeric(
+            (value) => InputValidators.numeroMotor(
               value,
               fieldName: 'Número de motor',
-              minLength: 4,
-              maxLength: 25,
             ),
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9-]')),
-          LengthLimitingTextInputFormatter(25),
-        ],
+        inputFormatters: InputFormatters.numeroMotor(),
         textCapitalization: TextCapitalization.characters,
         getValue: (v) => v?.noMotor ?? '',
         applyValue:
@@ -330,7 +325,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
               noPlaca: v?.noPlaca ?? (initial != null ? VehicleForm.fromVehicle(initial).noPlaca : ''),
               tipoVehiculoId: v?.tipoVehiculoId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoVehiculoId : defaultOption(typeOptions)),
               marcaId: v?.marcaId ?? (initial != null ? VehicleForm.fromVehicle(initial).marcaId : defaultOption(brandOptions)),
-              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : defaultOption(modelOptions)),
+              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : null),
               tipoCombustibleId: v?.tipoCombustibleId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoCombustibleId : defaultOption(fuelOptions)),
               estado: v?.estado ?? initial?.estado ?? true,
             ),
@@ -356,7 +351,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
               noPlaca: v?.noPlaca ?? (initial != null ? VehicleForm.fromVehicle(initial).noPlaca : ''),
               tipoVehiculoId: value as int,
               marcaId: v?.marcaId ?? (initial != null ? VehicleForm.fromVehicle(initial).marcaId : defaultOption(brandOptions)),
-              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : defaultOption(modelOptions)),
+              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : null),
               tipoCombustibleId: v?.tipoCombustibleId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoCombustibleId : defaultOption(fuelOptions)),
               estado: v?.estado ?? initial?.estado ?? true,
             ),
@@ -374,30 +369,31 @@ class _VehicleScreenState extends State<VehicleScreen> {
         },
         getValue: (v) => v?.marcaId,
         applyValue:
-            (v, value) => VehicleForm(
-              id: v?.id ?? initial?.id,
-              descripcion: v?.descripcion ?? (initial != null ? VehicleForm.fromVehicle(initial).descripcion : ''),
-              noChasis: v?.noChasis ?? (initial != null ? VehicleForm.fromVehicle(initial).noChasis : ''),
-              noMotor: v?.noMotor ?? (initial != null ? VehicleForm.fromVehicle(initial).noMotor : ''),
-              noPlaca: v?.noPlaca ?? (initial != null ? VehicleForm.fromVehicle(initial).noPlaca : ''),
-              tipoVehiculoId: v?.tipoVehiculoId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoVehiculoId : defaultOption(typeOptions)),
-              marcaId: value as int,
-              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : defaultOption(modelOptions)),
-              tipoCombustibleId: v?.tipoCombustibleId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoCombustibleId : defaultOption(fuelOptions)),
-              estado: v?.estado ?? initial?.estado ?? true,
-            ),
+            (v, value) {
+              // Al cambiar la marca, resetear el modelo seleccionado
+              final filteredModels = modelProvider.todosModelos
+                  .where((model) => model.marca?.id == value)
+                  .toList();
+              final firstModelId = filteredModels.isNotEmpty ? filteredModels.first.id : null;
+
+              return VehicleForm(
+                id: v?.id ?? initial?.id,
+                descripcion: v?.descripcion ?? (initial != null ? VehicleForm.fromVehicle(initial).descripcion : ''),
+                noChasis: v?.noChasis ?? (initial != null ? VehicleForm.fromVehicle(initial).noChasis : ''),
+                noMotor: v?.noMotor ?? (initial != null ? VehicleForm.fromVehicle(initial).noMotor : ''),
+                noPlaca: v?.noPlaca ?? (initial != null ? VehicleForm.fromVehicle(initial).noPlaca : ''),
+                tipoVehiculoId: v?.tipoVehiculoId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoVehiculoId : defaultOption(typeOptions)),
+                marcaId: value as int,
+                modeloId: firstModelId, // Resetear al primer modelo de la marca seleccionada
+                tipoCombustibleId: v?.tipoCombustibleId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoCombustibleId : defaultOption(fuelOptions)),
+                estado: v?.estado ?? initial?.estado ?? true,
+              );
+            },
       ),
       FormFieldDefinition<VehicleForm>(
         key: 'modeloId',
         label: 'Modelo',
-        fieldType: 'dropdown',
-        options: modelOptions,
-        validator: (value) {
-          if (value == null) {
-            return 'Modelo es requerido';
-          }
-          return null;
-        },
+        fieldType: 'custom',
         getValue: (v) => v?.modeloId,
         applyValue:
             (v, value) => VehicleForm(
@@ -408,10 +404,73 @@ class _VehicleScreenState extends State<VehicleScreen> {
               noPlaca: v?.noPlaca ?? (initial != null ? VehicleForm.fromVehicle(initial).noPlaca : ''),
               tipoVehiculoId: v?.tipoVehiculoId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoVehiculoId : defaultOption(typeOptions)),
               marcaId: v?.marcaId ?? (initial != null ? VehicleForm.fromVehicle(initial).marcaId : defaultOption(brandOptions)),
-              modeloId: value as int,
+              modeloId: value as int?,
               tipoCombustibleId: v?.tipoCombustibleId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoCombustibleId : defaultOption(fuelOptions)),
               estado: v?.estado ?? initial?.estado ?? true,
             ),
+        builder: (context, controller, initialData, formValues) {
+          // Obtener la marca seleccionada de los valores del formulario
+          final marcaId = formValues?['marcaId'] as int?;
+
+          // Filtrar modelos por la marca seleccionada
+          final filteredModels = marcaId != null
+              ? modelProvider.todosModelos
+                  .where((model) => model.marca?.id == marcaId)
+                  .toList()
+              : <Model>[];
+
+          // Crear opciones para el dropdown
+          final modelOptions = filteredModels
+              .map((e) => {'value': e.id, 'label': e.descripcion})
+              .toList();
+
+          // Si no hay marca seleccionada, mostrar mensaje
+          if (marcaId == null) {
+            return DropdownButtonFormField<int>(
+              decoration: const InputDecoration(
+                labelText: 'Modelo',
+                hintText: 'Selecciona una marca primero',
+              ),
+              items: const [],
+              onChanged: null,
+              validator: (value) => 'Debe seleccionar una marca primero',
+            );
+          }
+
+          // Si no hay modelos para la marca seleccionada
+          if (filteredModels.isEmpty) {
+            return DropdownButtonFormField<int>(
+              decoration: const InputDecoration(
+                labelText: 'Modelo',
+                hintText: 'No hay modelos disponibles para esta marca',
+              ),
+              items: const [],
+              onChanged: null,
+              validator: (value) => 'No hay modelos disponibles para la marca seleccionada',
+            );
+          }
+
+          // Verificar si el valor actual es válido para la marca seleccionada
+          final currentValue = controller.value as int?;
+          final isValidCurrentValue = currentValue != null &&
+              filteredModels.any((model) => model.id == currentValue);
+
+          return DropdownButtonFormField<int>(
+            value: isValidCurrentValue ? currentValue : null,
+            decoration: const InputDecoration(labelText: 'Modelo'),
+            items: modelOptions.map((opt) => DropdownMenuItem<int>(
+              value: opt['value'] as int,
+              child: Text(opt['label'] as String),
+            )).toList(),
+            onChanged: (value) => controller.setValue(value),
+            validator: (value) {
+              if (value == null) {
+                return 'Modelo es requerido';
+              }
+              return null;
+            },
+          );
+        },
       ),
       FormFieldDefinition<VehicleForm>(
         key: 'tipoCombustibleId',
@@ -434,7 +493,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
               noPlaca: v?.noPlaca ?? (initial != null ? VehicleForm.fromVehicle(initial).noPlaca : ''),
               tipoVehiculoId: v?.tipoVehiculoId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoVehiculoId : defaultOption(typeOptions)),
               marcaId: v?.marcaId ?? (initial != null ? VehicleForm.fromVehicle(initial).marcaId : defaultOption(brandOptions)),
-              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : defaultOption(modelOptions)),
+              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : null),
               tipoCombustibleId: value as int,
               estado: v?.estado ?? initial?.estado ?? true,
             ),
@@ -457,7 +516,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
               noPlaca: v?.noPlaca ?? (initial != null ? VehicleForm.fromVehicle(initial).noPlaca : ''),
               tipoVehiculoId: v?.tipoVehiculoId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoVehiculoId : defaultOption(typeOptions)),
               marcaId: v?.marcaId ?? (initial != null ? VehicleForm.fromVehicle(initial).marcaId : defaultOption(brandOptions)),
-              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : defaultOption(modelOptions)),
+              modeloId: v?.modeloId ?? (initial != null ? VehicleForm.fromVehicle(initial).modeloId : null),
               tipoCombustibleId: v?.tipoCombustibleId ?? (initial != null ? VehicleForm.fromVehicle(initial).tipoCombustibleId : defaultOption(fuelOptions)),
               estado: value as bool,
             ),

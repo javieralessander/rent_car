@@ -588,6 +588,90 @@ class InputValidators {
 
     return null;
   }
+
+  /// Validador para número de placa dominicana (nomenclaturas RD actualizadas)
+  static String? placaDominicana(
+    String? value, {
+    String fieldName = 'Número de placa',
+  }) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return '$fieldName es requerido';
+
+    // Nomenclaturas oficiales de República Dominicana
+    final plateRegex = RegExp(
+      r'^(?:' // Inicio del grupo principal
+      r'A{1,2}' // Automóvil (A o AA)
+      r'|B' // Automóvil interurbano público
+      r'|C' // Automóvil turístico
+      r'|D' // Autobús público urbano
+      r'|F' // Remolque
+      r'|G' // Jeep o chipeta
+      r'|H' // Ambulancia
+      r'|I' // Autobús privado
+      r'|J' // Montacargas
+      r'|K' // Motocicleta
+      r'|L' // Carga
+      r'|M' // Carro fúnebre
+      r'|P' // Autobús turístico
+      r'|R' // Autobús público interurbano
+      r'|S' // Volteo
+      r'|T' // Automóvil público urbano
+      r'|U' // Máquina pesada
+      r'|OE|OF|OM|OP' // Militares y policiales
+      r'|BC' // Consulares
+      r'|WD' // Diplomáticos
+      r'|OI' // Organismos internacionales
+      r'|EX' // Iglesias exoneradas
+      r'|YX|Z' // Otras exoneradas
+      r'|X' // Vehículos en exhibición
+      r'|DD' // Dealers
+      r')-?\d{3,6}$', // De 3 a 6 dígitos, opcional guion
+      caseSensitive: false,
+    );
+
+    if (!plateRegex.hasMatch(trimmed)) {
+      return '$fieldName debe tener formato válido RD (ej: A123456, TAX-1234, DD-001234)';
+    }
+
+    return null;
+  }
+
+  /// Validador para número de chasis (VIN - 17 caracteres)
+  static String? numeroChasiVIN(
+    String? value, {
+    String fieldName = 'Número de chasis',
+  }) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return '$fieldName es requerido';
+
+    // VIN debe tener exactamente 17 caracteres alfanuméricos
+    // No puede contener I, O, Q para evitar confusión con 1, 0
+    final vinRegex = RegExp(r'^[A-HJ-NPR-Z0-9]{17}$');
+
+    if (!vinRegex.hasMatch(trimmed.toUpperCase())) {
+      return '$fieldName debe tener 17 caracteres alfanuméricos válidos';
+    }
+
+    return null;
+  }
+
+  /// Validador para número de motor
+  static String? numeroMotor(
+    String? value, {
+    String fieldName = 'Número de motor',
+  }) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return '$fieldName es requerido';
+
+    // Número de motor: 6-15 caracteres alfanuméricos
+    final motorRegex = RegExp(r'^[A-Z0-9]{6,15}$');
+
+    if (!motorRegex.hasMatch(trimmed.toUpperCase())) {
+      return '$fieldName debe tener entre 6 y 15 caracteres alfanuméricos';
+    }
+
+    return null;
+  }
 }
 
 /// Utilidades de formateo reutilizables.
@@ -630,6 +714,33 @@ class InputFormatters {
       UpperCaseTextFormatter(),
       FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9-]')),
       LengthLimitingTextInputFormatter(maxLength),
+    ];
+  }
+
+  /// Formatter para números de placa dominicanos
+  static List<TextInputFormatter> placaDominicana() {
+    return [
+      UpperCaseTextFormatter(),
+      FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9-]')),
+      LengthLimitingTextInputFormatter(10), // DD-123456 o OE-123456 (máximo posible)
+    ];
+  }
+
+  /// Formatter para número de chasis (VIN)
+  static List<TextInputFormatter> chasisVIN() {
+    return [
+      UpperCaseTextFormatter(),
+      FilteringTextInputFormatter.allow(RegExp(r'[A-HJ-NPR-Z0-9]')), // Excluye I, O, Q
+      LengthLimitingTextInputFormatter(17),
+    ];
+  }
+
+  /// Formatter para número de motor
+  static List<TextInputFormatter> numeroMotor() {
+    return [
+      UpperCaseTextFormatter(),
+      FilteringTextInputFormatter.allow(RegExp(r'[A-Z0-9]')),
+      LengthLimitingTextInputFormatter(15),
     ];
   }
 

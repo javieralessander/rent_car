@@ -108,8 +108,8 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.white,
       iconTheme: const IconThemeData(color: Colors.black),
       actionsPadding: EdgeInsets.symmetric(
-        horizontal: sizeScreen.width * 0.02,
-        vertical: sizeScreen.height * 0.01,
+        horizontal: sizeScreen.width * 0.03,
+        vertical: sizeScreen.height * 0.015,
       ),
       toolbarHeight:
           isSmall
@@ -131,7 +131,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
                   : 90,
         ),
       ),
-      titleSpacing: isMobile ? 0 : sizeScreen.width * 0.02,
+      titleSpacing: isMobile ? 16 : sizeScreen.width * 0.03,
       centerTitle: isMobile,
       actions: [
         PopupMenuButton<String>(
@@ -241,7 +241,10 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
               ? PreferredSize(
                 preferredSize: const Size.fromHeight(48),
                 child: Container(
-                  padding: EdgeInsets.only(left: sizeScreen.width * 0.02),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: sizeScreen.width * 0.03,
+                    vertical: 4,
+                  ),
                   height: 48,
                   alignment: Alignment.centerLeft,
                   decoration: BoxDecoration(

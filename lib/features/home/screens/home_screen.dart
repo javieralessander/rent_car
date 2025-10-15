@@ -41,16 +41,16 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: isMobile ? const CustomDrawer() : null,
       appBar: GenericAppBar(isMobile: isMobile),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton:
-          isMobile || showAssistant
-              ? null // Ocultar FAB en pantallas móviles
-              : FloatingActionButton.extended(
-                heroTag: 'chat_assistant',
-                backgroundColor: Colors.blue,
-                icon: const Icon(Icons.support_agent),
-                label: const Text('Soporte'),
-                onPressed: () => setState(() => showAssistant = true),
-              ),
+      // floatingActionButton:
+      //     isMobile || showAssistant
+      //         ? null // Ocultar FAB en pantallas móviles
+      //         : FloatingActionButton.extended(
+      //           heroTag: 'chat_assistant',
+      //           backgroundColor: Colors.blue,
+      //           icon: const Icon(Icons.support_agent),
+      //           label: const Text('Soporte'),
+      //           onPressed: () => setState(() => showAssistant = true),
+      //         ),
       body: SizedBox(
         height: double.infinity,
         child: Stack(
@@ -62,16 +62,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   onRefresh: () => dashboardProvider.loadDashboardData(),
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 16 : 32,
+                      vertical: 24,
+                    ),
                     child: Column(
                       children: [
                         // --------- ALERTAS EN FRANJA SUPERIOR ---------
                         _buildAlertsSection(dashboardProvider),
 
-                        // --------- ACCESOS RÁPIDOS ---------
-                        _buildQuickActionsSection(),
-
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
 
                         // --------- INDICADORES DE CARGA O ERROR ---------
                         if (dashboardProvider.isLoading)
@@ -89,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         // --------- INFORMACIÓN ADICIONAL ---------
                         Padding(
-                          padding: const EdgeInsets.only(top: 24),
+                          padding: const EdgeInsets.only(top: 40),
                           child: Center(
                             child: Text(
                               'Última actualización: ${_formatTime(DateTime.now())}',
@@ -161,62 +161,66 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildQuickActionsSection() {
+
+  Widget _buildHorizontalQuickActions() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            'Accesos Rápidos',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.dark,
+          Expanded(
+            child: _buildHorizontalQuickActionItem(
+              icon: Icons.directions_car,
+              label: 'Vehículos',
+              color: AppColors.primary,
+              onTap: () => context.pushReplacementNamed(VehicleScreen.name),
             ),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.start,
-            children: [
-              _buildQuickActionCard(
-                icon: Icons.directions_car,
-                label: 'Vehículos',
-                color: AppColors.primary,
-                onTap: () => context.pushReplacementNamed(VehicleScreen.name),
-              ),
-              _buildQuickActionCard(
-                icon: Icons.people,
-                label: 'Clientes',
-                color: AppColors.secondary,
-                onTap: () => context.pushReplacementNamed(ClientScreen.name),
-              ),
-              _buildQuickActionCard(
-                icon: Icons.car_rental,
-                label: 'Rentas',
-                color: AppColors.success,
-                onTap: () => context.pushReplacementNamed(RentalScreen.name),
-              ),
-              _buildQuickActionCard(
-                icon: Icons.category,
-                label: 'Tipos Vehículos',
-                color: AppColors.info,
-                onTap: () => context.pushReplacementNamed(VehicleTypeScreen.name),
-              ),
-            ],
+          Container(width: 1, height: 40, color: Colors.grey.shade300),
+          Expanded(
+            child: _buildHorizontalQuickActionItem(
+              icon: Icons.people,
+              label: 'Clientes',
+              color: AppColors.secondary,
+              onTap: () => context.pushReplacementNamed(ClientScreen.name),
+            ),
+          ),
+          Container(width: 1, height: 40, color: Colors.grey.shade300),
+          Expanded(
+            child: _buildHorizontalQuickActionItem(
+              icon: Icons.car_rental,
+              label: 'Rentas',
+              color: AppColors.success,
+              onTap: () => context.pushReplacementNamed(RentalScreen.name),
+            ),
+          ),
+          Container(width: 1, height: 40, color: Colors.grey.shade300),
+          Expanded(
+            child: _buildHorizontalQuickActionItem(
+              icon: Icons.category,
+              label: 'Tipos Vehículos',
+              color: AppColors.info,
+              onTap: () => context.pushReplacementNamed(VehicleTypeScreen.name),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQuickActionCard({
+  Widget _buildHorizontalQuickActionItem({
     required IconData icon,
     required String label,
     required Color color,
@@ -225,21 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 120,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -247,12 +238,12 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
                 color: color,
-                size: 24,
+                size: 28,
               ),
             ),
             const SizedBox(height: 8),
@@ -310,8 +301,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildChartsSection(DashboardProvider provider, bool isMobile) {
     return Center(
       child: Wrap(
-        spacing: 32,
-        runSpacing: 32,
+        spacing: isMobile ? 24 : 40,
+        runSpacing: isMobile ? 24 : 40,
         alignment: WrapAlignment.center,
         children: [
           // Tarjeta PieChart con datos reales
@@ -320,8 +311,8 @@ class _HomeScreenState extends State<HomeScreen> {
           // Tarjeta BarChart vertical con datos reales
           _buildVerticalBarChartCard(provider, isMobile),
 
-          // Tarjeta BarChart horizontal con datos reales
-          _buildHorizontalBarChartCard(provider, isMobile),
+          // Tarjetas de métricas clave
+          _buildMetricsCardsSection(provider, isMobile),
         ],
       ),
     );
@@ -334,9 +325,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 .map(
                   (e) => PieChartSectionModel(
                     value: e.value.toDouble(),
-                    title: e.key,
+                    title: _cleanVehicleTypeName(e.key),
                     color: _getColorForVehicleType(e.key),
-                    svgAsset: 'assets/svgs/sicom.svg',
+                    iconData: _getIconForVehicleType(e.key),
                   ),
                 )
                 .toList()
@@ -344,26 +335,26 @@ class _HomeScreenState extends State<HomeScreen> {
               PieChartSectionModel(
                 value: 5.0,
                 title: 'Sedán',
-                color: Colors.blue,
-                svgAsset: 'assets/svgs/sicom.svg',
+                color: const Color(0xFF3B82F6),
+                iconData: Icons.directions_car,
               ),
               PieChartSectionModel(
                 value: 3.0,
                 title: 'SUV',
-                color: Colors.green,
-                svgAsset: 'assets/svgs/sicom.svg',
+                color: const Color(0xFF10B981),
+                iconData: Icons.drive_eta,
               ),
               PieChartSectionModel(
                 value: 2.0,
-                title: 'Camioneta',
-                color: Colors.orange,
-                svgAsset: 'assets/svgs/sicom.svg',
+                title: 'Pickup',
+                color: const Color(0xFFF59E0B),
+                iconData: Icons.airport_shuttle,
               ),
             ];
 
     return Container(
-      width: isMobile ? double.infinity : 400,
-      padding: const EdgeInsets.all(24),
+      width: isMobile ? double.infinity : 420,
+      padding: EdgeInsets.all(isMobile ? 20 : 28),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -381,37 +372,21 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Vehículos por Tipo',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Expanded(
+                  child: Text(
+                    'Vehículos por Tipo',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    if (provider.summary != null) ...[
-                      Chip(
-                        label: Text(
-                          '${provider.summary!.clientsByType} vehículos',
-                        ),
-                        backgroundColor: Colors.blue.shade50,
-                        labelStyle: const TextStyle(fontSize: 12),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          '${provider.summary!.totalActiveRentals} rentados',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                if (provider.summary != null)
+                  Chip(
+                    label: Text(
+                      '${provider.summary!.totalVehicles} total',
+                    ),
+                    backgroundColor: Colors.blue.shade50,
+                    labelStyle: const TextStyle(fontSize: 12),
+                  ),
               ],
             ),
             const SizedBox(height: 24),
@@ -429,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 .map(
                   (e) => CustomBarChartData(
                     stackedRods: [
-                      [CustomRodStackItem(0, e.value.toDouble(), Colors.blue)],
+                      [CustomRodStackItem(0, e.value.toDouble(), const Color(0xFF3B82F6))],
                     ],
                   ),
                 )
@@ -437,32 +412,32 @@ class _HomeScreenState extends State<HomeScreen> {
             : [
               CustomBarChartData(
                 stackedRods: [
-                  [CustomRodStackItem(0, 5.0, Colors.blue)],
+                  [CustomRodStackItem(0, 5.0, const Color(0xFF3B82F6))],
                 ],
               ),
               CustomBarChartData(
                 stackedRods: [
-                  [CustomRodStackItem(0, 8.0, Colors.blue)],
+                  [CustomRodStackItem(0, 8.0, const Color(0xFF3B82F6))],
                 ],
               ),
               CustomBarChartData(
                 stackedRods: [
-                  [CustomRodStackItem(0, 12.0, Colors.blue)],
+                  [CustomRodStackItem(0, 12.0, const Color(0xFF3B82F6))],
                 ],
               ),
               CustomBarChartData(
                 stackedRods: [
-                  [CustomRodStackItem(0, 7.0, Colors.blue)],
+                  [CustomRodStackItem(0, 7.0, const Color(0xFF3B82F6))],
                 ],
               ),
               CustomBarChartData(
                 stackedRods: [
-                  [CustomRodStackItem(0, 9.0, Colors.blue)],
+                  [CustomRodStackItem(0, 9.0, const Color(0xFF3B82F6))],
                 ],
               ),
               CustomBarChartData(
                 stackedRods: [
-                  [CustomRodStackItem(0, 6.0, Colors.blue)],
+                  [CustomRodStackItem(0, 6.0, const Color(0xFF3B82F6))],
                 ],
               ),
             ];
@@ -473,8 +448,8 @@ class _HomeScreenState extends State<HomeScreen> {
             : ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
 
     return Container(
-      width: isMobile ? double.infinity : 500,
-      padding: const EdgeInsets.all(24),
+      width: isMobile ? double.infinity : 520,
+      padding: EdgeInsets.all(isMobile ? 20 : 28),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -523,71 +498,129 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHorizontalBarChartCard(
-    DashboardProvider provider,
-    bool isMobile,
-  ) {
-    final statusData =
-        provider.clientsByType.isNotEmpty
-            ? provider.clientsByType.entries
-                .map(
-                  (e) => BarData(
-                    e.key == 'fisica' ? Colors.blue : Colors.green,
-                    e.value.toDouble(),
-                    e.value.toDouble() + 2, // shadowValue
-                  ),
-                )
-                .toList()
-            : [
-              const BarData(Colors.blue, 8.0, 10.0),
-              const BarData(Colors.green, 4.0, 6.0),
-            ];
-
+  Widget _buildMetricsCardsSection(DashboardProvider provider, bool isMobile) {
     return Container(
-      width: isMobile ? double.infinity : 500,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 12,
-            offset: Offset(0, 6),
+      width: isMobile ? double.infinity : 520,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildMetricCard(
+                  title: 'Total Clientes',
+                  value: '${provider.summary?.totalClients ?? 0}',
+                  icon: Icons.people,
+                  color: const Color(0xFF3B82F6),
+                  subtitle: 'Registrados',
+                ),
+              ),
+              SizedBox(width: isMobile ? 12 : 20),
+              Expanded(
+                child: _buildMetricCard(
+                  title: 'Rentas Activas',
+                  value: '${provider.summary?.totalActiveRentals ?? 0}',
+                  icon: Icons.car_rental,
+                  color: const Color(0xFF10B981),
+                  subtitle: 'En curso',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildMetricCard(
+                  title: 'Total Vehículos',
+                  value: '${provider.summary?.totalVehicles ?? 0}',
+                  icon: Icons.directions_car,
+                  color: const Color(0xFFF59E0B),
+                  subtitle: 'En flota',
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildMetricCard(
+                  title: 'Inspecciones',
+                  value: '${provider.summary?.totalInspections ?? 0}',
+                  icon: Icons.build_circle,
+                  color: const Color(0xFF8B5CF6),
+                  subtitle: 'Realizadas',
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      child: SizedBox(
-        height: isMobile ? 300 : 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Clientes por Tipo',
-                  style: Theme.of(context).textTheme.titleLarge,
+    );
+  }
+
+  Widget _buildMetricCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required String subtitle,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                if (provider.summary != null)
-                  Chip(
-                    label: Text('${provider.summary!.totalClients} clientes'),
-                    backgroundColor: Colors.orange.shade50,
-                    avatar: const Icon(Icons.people, size: 16),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: BarChartSample7(
-                dataList: statusData,
-                title: '',
-                maxY: 20,
-                shadowColor: AppColors.borderColor,
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 24,
+                ),
               ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
-          ],
-        ),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -667,19 +700,91 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Obtiene color para tipos de vehículos
   Color _getColorForVehicleType(String type) {
-    switch (type.toLowerCase()) {
+    // Limpiar el tipo primero para comparar correctamente
+    String cleanType = _cleanVehicleTypeName(type).toLowerCase();
+
+    switch (cleanType) {
       case 'sedan':
       case 'sedán':
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // Azul vibrante
       case 'suv':
-        return Colors.green;
+        return const Color(0xFF10B981); // Verde esmeralda
       case 'camioneta':
       case 'pickup':
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Ámbar
       case 'compacto':
-        return Colors.purple;
+        return const Color(0xFF8B5CF6); // Púrpura
+      case 'motocicleta':
+        return const Color(0xFFEF4444); // Rojo
+      case 'camión':
+        return const Color(0xFF6B7280); // Gris
       default:
-        return Colors.grey;
+        // Generar colores diferentes para tipos no reconocidos
+        return _generateColorFromString(cleanType);
     }
+  }
+
+  /// Genera un color único basado en el string
+  Color _generateColorFromString(String text) {
+    final colors = [
+      const Color(0xFF3B82F6), // Azul
+      const Color(0xFF10B981), // Verde
+      const Color(0xFFF59E0B), // Ámbar
+      const Color(0xFF8B5CF6), // Púrpura
+      const Color(0xFFEF4444), // Rojo
+      const Color(0xFF06B6D4), // Cian
+      const Color(0xFFF97316), // Naranja
+      const Color(0xFFEC4899), // Rosa
+    ];
+
+    int index = text.hashCode % colors.length;
+    return colors[index.abs()];
+  }
+
+  /// Obtiene ícono para tipos de vehículos
+  IconData _getIconForVehicleType(String type) {
+    // Limpiar el tipo primero para comparar correctamente
+    String cleanType = _cleanVehicleTypeName(type).toLowerCase();
+
+    switch (cleanType) {
+      case 'sedan':
+      case 'sedán':
+        return Icons.directions_car;
+      case 'suv':
+        return Icons.drive_eta;
+      case 'camioneta':
+      case 'pickup':
+        return Icons.airport_shuttle;
+      case 'compacto':
+        return Icons.directions_car_filled;
+      case 'motocicleta':
+        return Icons.two_wheeler;
+      case 'camión':
+        return Icons.local_shipping;
+      default:
+        return Icons.directions_car_outlined;
+    }
+  }
+
+  /// Limpia el nombre del tipo de vehículo
+  String _cleanVehicleTypeName(String rawName) {
+    // Remover "Tipo TipoVehiculo(" y otros prefijos
+    String cleaned = rawName;
+
+    // Remover patrones como "Tipo TipoVehiculo(22 - SUV)"
+    if (cleaned.contains(' - ')) {
+      cleaned = cleaned.split(' - ').last;
+    }
+
+    // Remover paréntesis y números
+    cleaned = cleaned.replaceAll(RegExp(r'\([^)]*\)'), '');
+    cleaned = cleaned.replaceAll(RegExp(r'Tipo\s*TipoVehiculo\s*'), '');
+    cleaned = cleaned.replaceAll(RegExp(r'\d+\s*-\s*'), '');
+
+    // Remover paréntesis finales sueltos
+    cleaned = cleaned.replaceAll(RegExp(r'\)+$'), '');
+    cleaned = cleaned.replaceAll(RegExp(r'\(+$'), '');
+
+    return cleaned.trim();
   }
 }

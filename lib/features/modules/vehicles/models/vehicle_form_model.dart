@@ -13,7 +13,7 @@ class VehicleForm {
   final String noPlaca;
   final int tipoVehiculoId;
   final int marcaId;
-  final int modeloId;
+  final int? modeloId;
   final int tipoCombustibleId;
   final bool estado;
 
@@ -25,7 +25,7 @@ class VehicleForm {
     required this.noPlaca,
     required this.tipoVehiculoId,
     required this.marcaId,
-    required this.modeloId,
+    this.modeloId,
     required this.tipoCombustibleId,
     this.estado = true,
   });
@@ -76,7 +76,7 @@ class VehicleForm {
       'noPlaca': noPlaca,
       'tipoVehiculo': {'id': tipoVehiculoId},
       'marca': {'id': marcaId},
-      'modelo': {'id': modeloId},
+      if (modeloId != null) 'modelo': {'id': modeloId},
       'tipoCombustible': {'id': tipoCombustibleId},
       'estado': estado,
     };

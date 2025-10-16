@@ -6,6 +6,7 @@ import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
 import '../../../../shared/widgets/generic_form_dialog.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../../shared/utils/input_validators.dart';
 import '../models/vehicle_type_model.dart';
 import '../providers/vehicle_type_provider.dart';
@@ -213,9 +214,15 @@ class _VehicleTypeScreenState extends State<VehicleTypeScreen> {
           label: 'Eliminar',
           icon: Icons.delete_outline,
           variant: CollectionActionVariant.danger,
-          onPressed: () => context
-              .read<VehicleTypeProvider>()
-              .eliminarTipoVehiculo(tipo.id),
+          onPressed: () => ConfirmationDialog.showDeleteDialog(
+            context: context,
+            title: 'Eliminar Tipo de Vehículo',
+            itemName: tipo.descripcion,
+            additionalInfo: 'Se eliminará permanentemente del sistema.',
+            onConfirm: () => context
+                .read<VehicleTypeProvider>()
+                .eliminarTipoVehiculo(tipo.id),
+          ),
         ),
       ],
       footerStatus: CollectionFooterStatus(

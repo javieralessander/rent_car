@@ -5,6 +5,7 @@ import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
 import '../../../../shared/widgets/generic_form_dialog.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../../shared/utils/input_validators.dart';
 import '../../../../shared/widgets/status_widget.dart';
 import '../models/client_model.dart';
@@ -296,7 +297,13 @@ class _ClientScreenState extends State<ClientScreen> {
           label: 'Eliminar',
           icon: Icons.delete_outline,
           variant: CollectionActionVariant.danger,
-          onPressed: () => context.read<ClientProvider>().eliminarCliente(cliente.id!),
+          onPressed: () => ConfirmationDialog.showDeleteDialog(
+            context: context,
+            title: 'Eliminar Cliente',
+            itemName: cliente.nombre,
+            additionalInfo: 'Se eliminará permanentemente del sistema junto con su historial.',
+            onConfirm: () => context.read<ClientProvider>().eliminarCliente(cliente.id!),
+          ),
         ),
       ],
       footerStatus: CollectionFooterStatus(

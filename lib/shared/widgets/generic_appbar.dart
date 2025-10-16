@@ -96,7 +96,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isMobile;
   final double height;
 
-  const GenericAppBar({super.key, required this.isMobile, this.height = 60});
+  const GenericAppBar({super.key, required this.isMobile, this.height = 140});
 
   @override
   Widget build(BuildContext context) {
@@ -113,10 +113,10 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       toolbarHeight:
           isSmall
-              ? 56
+              ? 90
               : isMedium
-              ? 64
-              : 72,
+              ? 90
+              : 90,
       title: GestureDetector(
         onTap: () {
           context.go('/home');
@@ -284,7 +284,7 @@ class GenericAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(height + (!isMobile ? 48 : 1));
+  Size get preferredSize => Size.fromHeight(height);
 }
 
 class CustomDrawer extends StatelessWidget {

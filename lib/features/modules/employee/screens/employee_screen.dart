@@ -5,6 +5,7 @@ import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
 import '../../../../shared/widgets/generic_form_dialog.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../../shared/utils/input_validators.dart';
 import '../models/employee_model.dart';
 import '../providers/employee_provider.dart';
@@ -52,12 +53,54 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         onPageChanged: provider.cambiarPagina,
         onItemsPerPageChanged: provider.cambiarRegistrosPorPagina,
         onSearch: (value) => provider.busqueda = value,
-        topRightWidget: FloatingActionButton.extended(
-          onPressed: () => _openEmployeeDialog(context),
-          icon: const Icon(Icons.add),
-          label: const Text('Agregar empleado'),
-          backgroundColor: AppColors.success,
-          foregroundColor: AppColors.white,
+        topRightWidget: Container(
+          height: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: const LinearGradient(
+              colors: [AppColors.success, Color(0xFF34D399)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.success.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ElevatedButton.icon(
+            onPressed: () => _openEmployeeDialog(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: AppColors.white,
+              shadowColor: Colors.transparent,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+            ),
+            icon: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                size: 18,
+                color: AppColors.white,
+              ),
+            ),
+            label: const Text(
+              'Agregar empleado',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ),
         emptyBuilder: provider.error != null
             ? Column(
@@ -309,7 +352,13 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
           label: 'Eliminar',
           icon: Icons.delete_outline,
           variant: CollectionActionVariant.danger,
-          onPressed: () => context.read<EmployeeProvider>().eliminarEmpleado(empleado.id),
+          onPressed: () => ConfirmationDialog.showDeleteDialog(
+            context: context,
+            title: 'Eliminar Empleado',
+            itemName: empleado.nombre,
+            additionalInfo: 'Se eliminará permanentemente del sistema junto con su información laboral.',
+            onConfirm: () => context.read<EmployeeProvider>().eliminarEmpleado(empleado.id),
+          ),
         ),
       ],
       footerStatus: CollectionFooterStatus(

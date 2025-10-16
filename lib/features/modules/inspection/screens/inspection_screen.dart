@@ -4,6 +4,7 @@ import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
 import '../../../../shared/widgets/generic_form_dialog.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../vehicles/providers/vehicle_provider.dart';
 import '../../clients/providers/client_provider.dart';
 import '../../employee/providers/employee_provider.dart';
@@ -451,7 +452,13 @@ class _InspectionScreenState extends State<InspectionScreen> {
           label: 'Eliminar',
           icon: Icons.delete_outline,
           variant: CollectionActionVariant.danger,
-          onPressed: () => context.read<InspectionProvider>().eliminarInspeccion(inspeccion.id),
+          onPressed: () => ConfirmationDialog.showDeleteDialog(
+            context: context,
+            title: 'Eliminar Inspección',
+            itemName: 'Inspección #${inspeccion.id}',
+            additionalInfo: 'Se eliminará permanentemente del sistema.',
+            onConfirm: () => context.read<InspectionProvider>().eliminarInspeccion(inspeccion.id),
+          ),
         ),
       ],
       footerStatus: CollectionFooterStatus(

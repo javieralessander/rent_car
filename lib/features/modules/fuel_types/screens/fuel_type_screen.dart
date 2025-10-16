@@ -6,6 +6,7 @@ import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
 import '../../../../shared/widgets/generic_form_dialog.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../../shared/utils/input_validators.dart';
 import '../models/fuel_type_model.dart';
 import '../providers/fuel_type_provider.dart';
@@ -212,9 +213,15 @@ class _FuelTypeScreenState extends State<FuelTypeScreen> {
           label: 'Eliminar',
           icon: Icons.delete_outline,
           variant: CollectionActionVariant.danger,
-          onPressed: () => context
-              .read<FuelTypeProvider>()
-              .eliminarTipoCombustible(tipo.id),
+          onPressed: () => ConfirmationDialog.showDeleteDialog(
+            context: context,
+            title: 'Eliminar Tipo de Combustible',
+            itemName: tipo.descripcion,
+            additionalInfo: 'Se eliminará permanentemente del sistema.',
+            onConfirm: () => context
+                .read<FuelTypeProvider>()
+                .eliminarTipoCombustible(tipo.id),
+          ),
         ),
       ],
       footerStatus: CollectionFooterStatus(

@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../../../core/config/env.dart';
 import '../../modules/vehicles/models/vehicle_model.dart';
 import '../../modules/clients/models/client_model.dart';
 import '../../modules/rental/models/rental_model.dart';
 
 class ChartApiService {
-  static const String baseUrl = 'http://localhost:3001';
+  static String get baseUrl => Environment.apiUrl;
 
   static Future<List<Vehicle>> fetchVehicles() async {
     final response = await http.get(Uri.parse('$baseUrl/vehiculos'));

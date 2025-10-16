@@ -6,6 +6,7 @@ import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
 import '../../../../shared/widgets/generic_form_dialog.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../../shared/utils/input_validators.dart';
 import '../../brand/providers/brand_provider.dart';
 import '../models/model_model.dart';
@@ -160,31 +161,12 @@ class _ModelScreenState extends State<ModelScreen> {
     Model model,
     ModelProvider provider,
   ) {
-    showDialog(
+    ConfirmationDialog.showDeleteDialog(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Eliminar Modelo'),
-            content: Text(
-              '¿Está seguro que desea eliminar el modelo "${model.descripcion}"?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.danger,
-                ),
-                onPressed: () async {
-                  await provider.eliminarModelo(model.id!);
-                  if (context.mounted) Navigator.pop(context);
-                },
-                child: const Text('Eliminar'),
-              ),
-            ],
-          ),
+      title: 'Eliminar Modelo',
+      itemName: model.descripcion,
+      additionalInfo: 'Se eliminará permanentemente del sistema.',
+      onConfirm: () => provider.eliminarModelo(model.id!),
     );
   }
 

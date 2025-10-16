@@ -225,24 +225,44 @@ class GenericCollectionView extends StatelessWidget {
 
                     final searchField =
                         onSearch != null
-                            ? SizedBox(
-                              width: 220,
+                            ? Container(
+                              width: 280,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(22),
+                                color: AppColors.light.withOpacity(0.5),
+                                border: Border.all(
+                                  color: AppColors.grayLight.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
                               child: TextField(
                                 decoration: InputDecoration(
                                   prefixIcon: const Icon(
-                                    Icons.search,
+                                    Icons.search_rounded,
                                     color: AppColors.gray,
+                                    size: 20,
                                   ),
                                   hintText: 'Buscar...',
+                                  hintStyle: TextStyle(
+                                    color: AppColors.gray.withOpacity(0.7),
+                                    fontSize: 14,
+                                  ),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(22),
                                     borderSide: BorderSide.none,
                                   ),
-                                  filled: true,
-                                  fillColor: AppColors.light.withOpacity(0.45),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(22),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(22),
+                                    borderSide: BorderSide.none,
+                                  ),
                                   contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 0,
-                                    horizontal: 12,
+                                    vertical: 12,
+                                    horizontal: 16,
                                   ),
                                 ),
                                 onChanged: onSearch,
@@ -271,8 +291,8 @@ class GenericCollectionView extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: 12,
+                            runSpacing: 12,
                             children: actionWidgets,
                           ),
                         ],
@@ -295,7 +315,7 @@ class GenericCollectionView extends StatelessWidget {
                         ...actionWidgets
                             .map(
                               (widget) => Padding(
-                                padding: const EdgeInsets.only(left: 8),
+                                padding: const EdgeInsets.only(left: 12),
                                 child: widget,
                               ),
                             )
@@ -1724,21 +1744,32 @@ class _ViewModeToggle extends StatelessWidget {
     if (onModeChanged == null) return const SizedBox.shrink();
 
     return Container(
+      height: 44,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: AppColors.light.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(12),
+        color: AppColors.light.withOpacity(0.5),
+        border: Border.all(
+          color: AppColors.grayLight.withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _ViewModeButton(
-            icon: Icons.view_headline,
+            icon: Icons.view_list_rounded,
             label: 'Lista',
             selected: mode == CollectionViewMode.list,
             onPressed: () => onModeChanged?.call(CollectionViewMode.list),
           ),
+          Container(
+            width: 1,
+            height: 24,
+            color: AppColors.grayLight.withOpacity(0.4),
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+          ),
           _ViewModeButton(
-            icon: Icons.grid_view,
+            icon: Icons.grid_view_rounded,
             label: 'Grid',
             selected: mode == CollectionViewMode.grid,
             onPressed: () => onModeChanged?.call(CollectionViewMode.grid),
@@ -1764,17 +1795,37 @@ class _ViewModeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
-      style: TextButton.styleFrom(
-        minimumSize: const Size(60, 40),
-        foregroundColor: selected ? AppColors.white : AppColors.grayDark,
-        backgroundColor: selected ? AppColors.primary : Colors.transparent,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          minimumSize: const Size(80, 36),
+          foregroundColor: selected ? AppColors.white : AppColors.gray,
+          backgroundColor: selected
+              ? AppColors.primary
+              : Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          elevation: 0,
+        ),
+        onPressed: onPressed,
+        icon: Icon(
+          icon,
+          size: 18,
+          color: selected ? AppColors.white : AppColors.gray,
+        ),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? AppColors.white : AppColors.gray,
+          ),
+        ),
       ),
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
     );
   }
 }

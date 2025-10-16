@@ -5,6 +5,7 @@ import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
 import '../../../../shared/widgets/generic_form_dialog.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../../shared/utils/input_validators.dart';
 import '../../vehicles/providers/vehicle_provider.dart';
 import '../../vehicles/models/vehicle_model.dart';
@@ -756,47 +757,34 @@ class _RentalScreenState extends State<RentalScreen> {
   }
 
   Future<void> _eliminarRenta(BuildContext context, Rental renta) async {
-    final confirmed = await showDialog<bool>(
+    await ConfirmationDialog.showDeleteDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('¿Está seguro que desea eliminar la renta #${renta.noRenta}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
+      title: 'Eliminar Renta',
+      itemName: 'Renta #${renta.noRenta}',
+      additionalInfo: 'Se eliminará permanentemente del sistema.',
+      onConfirm: () async {
+        try {
+          await context.read<RentalProvider>().eliminarRenta(renta.noRenta!);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Renta eliminada exitosamente'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al eliminar renta: $e'),
+                backgroundColor: AppColors.danger,
+              ),
+            );
+          }
+        }
+      },
     );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        await context.read<RentalProvider>().eliminarRenta(renta.noRenta!);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Renta eliminada exitosamente'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error al eliminar renta: $e'),
-              backgroundColor: AppColors.danger,
-            ),
-          );
-        }
-      }
-    }
   }
 
   Future<void> _recibirVehiculo(BuildContext context, Rental renta) async {

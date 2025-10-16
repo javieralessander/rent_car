@@ -6,6 +6,7 @@ import '../../../../core/config/app_theme.dart';
 import '../../../../shared/widgets/generic_appbar.dart';
 import '../../../../shared/widgets/generic_collection_view.dart';
 import '../../../../shared/widgets/generic_form_dialog.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../../shared/utils/input_validators.dart';
 import '../models/brand_model.dart';
 import '../providers/brand_provider.dart';
@@ -203,8 +204,13 @@ class _BrandScreenState extends State<BrandScreen> {
           label: 'Eliminar',
           icon: Icons.delete_outline,
           variant: CollectionActionVariant.danger,
-          onPressed: () =>
-              context.read<BrandProvider>().eliminarMarca(brand.id),
+          onPressed: () => ConfirmationDialog.showDeleteDialog(
+            context: context,
+            title: 'Eliminar Marca',
+            itemName: brand.descripcion,
+            additionalInfo: 'Se eliminará permanentemente del sistema.',
+            onConfirm: () => context.read<BrandProvider>().eliminarMarca(brand.id),
+          ),
         ),
       ],
       footerStatus: CollectionFooterStatus(

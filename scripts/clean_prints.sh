@@ -9,7 +9,7 @@ echo "🧹 Iniciando limpieza de prints en el proyecto..."
 files_with_prints=$(find . -name "*.dart" -type f -exec grep -l "print(" {} \;)
 
 if [ -z "$files_with_prints" ]; then
-    echo "✅ No se encontraron archivos con print() statements"
+    echo " No se encontraron archivos con print() statements"
     exit 0
 fi
 
@@ -45,7 +45,7 @@ for file in $files_with_prints; do
 done
 
 echo ""
-echo "✅ Limpieza completada!"
+echo " Limpieza completada!"
 echo "💾 Se crearon backups con extensión .backup"
 echo ""
 echo "📊 Resumen:"
@@ -53,5 +53,5 @@ echo "- Archivos procesados: $(echo "$files_with_prints" | wc -l)"
 echo "- Logger imports agregados donde era necesario"
 echo "- print() reemplazados por Logger.debug()"
 echo ""
-echo "🔍 Para revisar los cambios, ejecuta:"
+echo " Para revisar los cambios, ejecuta:"
 echo "flutter analyze"

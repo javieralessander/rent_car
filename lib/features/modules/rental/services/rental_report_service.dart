@@ -56,7 +56,7 @@ class RentalReportService {
       );
 
       // Obtener datos de rentas desde el provider (datos ya cargados en memoria)
-      print('🔍 Obteniendo rentas desde el provider...');
+      print(' Obteniendo rentas desde el provider...');
       final allRentals = rentalProvider.todasRentas;
       print('📊 Total rentas en provider: ${allRentals.length}');
 
@@ -67,23 +67,16 @@ class RentalReportService {
       // Generar PDF siempre, incluso si no hay datos (para mostrar reporte vacío)
       final pdfBytes = await _generatePDF(rentals, config, filters);
       await _downloadPDF(pdfBytes, _generateFileName(filters));
-
-      print('✅ PDF generado exitosamente');
       return true;
     } catch (e) {
-      print('❌ Error generando reporte PDF: $e');
       return false;
     }
   }
 
   /// Aplica filtros a la lista de rentas
   List<Rental> _applyFilters(List<Rental> allRentals, RentalReportFilters filters) {
-    print('🔍 Aplicando filtros: ${filters.toMap()}');
-    print('🔍 Total rentas recibidas: ${allRentals?.length ?? 0}');
-
     // Validar que la lista no sea nula
     if (allRentals == null) {
-      print('❌ Lista de rentas es nula');
       return [];
     }
 
@@ -92,7 +85,7 @@ class RentalReportService {
         filters.endDate == null &&
         (filters.vehicleType == null || filters.vehicleType!.isEmpty) &&
         (filters.status == null || filters.status!.isEmpty)) {
-      print('✅ Sin filtros aplicados, devolviendo todas las rentas');
+      print(' Sin filtros aplicados, devolviendo todas las rentas');
       var sortedRentals = List<Rental>.from(allRentals);
       sortedRentals.sort((a, b) => b.fechaRenta.compareTo(a.fechaRenta));
       return sortedRentals;
@@ -105,7 +98,7 @@ class RentalReportService {
         final rentalDate = DateTime(rental.fechaRenta.year, rental.fechaRenta.month, rental.fechaRenta.day);
         final filterStartDate = DateTime(filters.startDate!.year, filters.startDate!.month, filters.startDate!.day);
         if (rentalDate.isBefore(filterStartDate)) {
-          print('❌ Renta ${rental.noRenta} excluida por fecha inicio: ${rental.fechaRenta} < ${filters.startDate}');
+          print('Renta ${rental.noRenta} excluida por fecha inicio: ${rental.fechaRenta} < ${filters.startDate}');
           return false;
         }
       }
@@ -115,7 +108,7 @@ class RentalReportService {
         final rentalDate = DateTime(rental.fechaRenta.year, rental.fechaRenta.month, rental.fechaRenta.day);
         final filterEndDate = DateTime(filters.endDate!.year, filters.endDate!.month, filters.endDate!.day);
         if (rentalDate.isAfter(filterEndDate)) {
-          print('❌ Renta ${rental.noRenta} excluida por fecha fin: ${rental.fechaRenta} > ${filters.endDate}');
+          print('Renta ${rental.noRenta} excluida por fecha fin: ${rental.fechaRenta} > ${filters.endDate}');
           return false;
         }
       }
@@ -124,7 +117,7 @@ class RentalReportService {
       if (filters.vehicleType != null && filters.vehicleType!.isNotEmpty) {
         final vehicleTypeDesc = rental.vehiculo?.tipoVehiculo?.descripcion?.toLowerCase();
         if (vehicleTypeDesc == null || !vehicleTypeDesc.contains(filters.vehicleType!.toLowerCase())) {
-          print('❌ Renta ${rental.noRenta} excluida por tipo vehículo: $vehicleTypeDesc no contiene ${filters.vehicleType}');
+          print('Renta ${rental.noRenta} excluida por tipo vehículo: $vehicleTypeDesc no contiene ${filters.vehicleType}');
           return false;
         }
       }
@@ -133,12 +126,12 @@ class RentalReportService {
       if (filters.status != null && filters.status!.isNotEmpty) {
         final rentalStatus = rental.estado.toString().split('.').last;
         if (rentalStatus != filters.status) {
-          print('❌ Renta ${rental.noRenta} excluida por estado: $rentalStatus != ${filters.status}');
+          print('Renta ${rental.noRenta} excluida por estado: $rentalStatus != ${filters.status}');
           return false;
         }
       }
 
-      print('✅ Renta ${rental.noRenta} incluida en el reporte');
+      print(' Renta ${rental.noRenta} incluida en el reporte');
       return true;
     }).toList();
 
@@ -211,26 +204,19 @@ class RentalReportService {
     final pdf = pw.Document();
 
     // Validar que las listas no sean nulas
-    final safeRentals = rentals ?? [];
-    final safeColumns = config.columns ?? [];
+    final safeRentals = rentals;
+    final safeColumns = config.columns;
 
     // Cargar fuente que soporte Unicode
     final font = await PdfGoogleFonts.nunitoRegular();
     final fontBold = await PdfGoogleFonts.nunitoBold();
 
     // Calcular estadísticas mejoradas con validación
-    final active = safeRentals.where((r) => r?.estadoCalculado == EstadoRenta.ACTIVA).length;
-    final completed = safeRentals.where((r) => r?.estadoCalculado == EstadoRenta.DEVUELTA).length;
-    final overdue = safeRentals.where((r) => r?.estadoCalculado == EstadoRenta.VENCIDA).length;
-    final canceled = safeRentals.where((r) => r?.estadoCalculado == EstadoRenta.CANCELADA).length;
-    final totalRevenue = safeRentals.fold<double>(0, (sum, r) => sum + (r?.montoTotal ?? 0.0));
-
-    print('📊 Estadísticas del PDF:');
-    print('   Total: ${safeRentals.length}');
-    print('   Activas: $active');
-    print('   Completadas: $completed');
-    print('   Vencidas: $overdue');
-    print('   Ingresos: $totalRevenue');
+    final active = safeRentals.where((r) => r.estadoCalculado == EstadoRenta.ACTIVA).length;
+    final completed = safeRentals.where((r) => r.estadoCalculado == EstadoRenta.DEVUELTA).length;
+    final overdue = safeRentals.where((r) => r.estadoCalculado == EstadoRenta.VENCIDA).length;
+    final canceled = safeRentals.where((r) => r.estadoCalculado == EstadoRenta.CANCELADA).length;
+    final totalRevenue = safeRentals.fold<double>(0, (sum, r) => sum + (r.montoTotal));
 
     pdf.addPage(
       pw.MultiPage(

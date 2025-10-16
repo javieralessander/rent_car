@@ -30,7 +30,7 @@ class DashboardEndpointTester {
         (json) => json, // Simplemente devolver el JSON sin parsear
       );
 
-      print('✅ $description: OK - ${response.length} elementos');
+      print(' $description: OK - ${response.length} elementos');
       if (response.isNotEmpty && response.length > 0) {
         print('   📄 Ejemplo del primer elemento:');
         final firstItem = response.first;
@@ -42,7 +42,7 @@ class DashboardEndpointTester {
       }
       print('');
     } catch (e) {
-      print('❌ $description: ERROR');
+      print('$description: ERROR');
       print('   Error: $e');
       print('');
     }

@@ -1025,7 +1025,7 @@ class _RentalReportDialogState extends State<_RentalReportDialog> {
         children: [
           Icon(Icons.picture_as_pdf, color: AppColors.primary),
           SizedBox(width: 8),
-          Text('Generar Reporte PDF'),
+          Text('Generar reporte PDF'),
         ],
       ),
       content: Container(

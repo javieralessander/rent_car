@@ -535,7 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   value: '${provider.summary?.totalVehicles ?? 0}',
                   icon: Icons.directions_car,
                   color: const Color(0xFFF59E0B),
-                  subtitle: 'En flota',
+                  subtitle: 'Flota disponible',
                 ),
               ),
               const SizedBox(width: 16),
